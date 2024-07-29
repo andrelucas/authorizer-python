@@ -23,8 +23,32 @@ import sys
 from authorizer.v1 import authorizer_pb2_grpc
 from authorizer.v1 import authorizer_pb2
 
+def fmt_common(desc, common):
+    """
+    Dump the common fields to the log.
+    """
+    tsiso = common.timestamp.ToDatetime().isoformat()
+    return f"{desc} ts=({tsiso}), id={common.authorization_id}"
+
 class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
-    pass
+
+    def Ping(self, request, context):
+        logging.debug(f"Received Ping({request})")
+        logging.debug(fmt_common("Ping Request", request.common))
+        response = authorizer_pb2.PingResponse()
+        response.common.timestamp.GetCurrentTime()
+        response.common.authorization_id = request.common.authorization_id
+        logging.debug(fmt_common("Ping Response", response.common))
+        return response
+
+    def Authorize(self, request, context):
+        logging.debug(f"Received Authorize({request})")
+        logging.debug(fmt_common("Authorize Request", request.common))
+        response = authorizer_pb2.AuthorizeResponse()
+        response.common.timestamp.GetCurrentTime()
+        response.common.authorization_id = request.common.authorization_id
+        logging.debug(fmt_common("Authorize Response", response.common))
+        return response
 
 def _load_credential_from_file(filepath):
     """https://github.com/grpc/grpc/blob/master/examples/python/auth/_credentials.py"""
@@ -73,7 +97,7 @@ if __name__ == "__main__":
     from sys import argv
 
     p = argparse.ArgumentParser(description="Authorizer gRPC server")
-    p.add_argument("port", type=int, help="Listen port", nargs="?", default=8002)
+    p.add_argument("port", type=int, help="Listen port", nargs="?", default=8003)
     p.add_argument(
         "-t", "--tls", help="connect to the server using TLS", action="store_true"
     )
