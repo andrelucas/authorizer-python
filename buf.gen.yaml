@@ -1,0 +1,11 @@
+version: v1
+managed:
+  enabled: true
+  optimize_for: SPEED
+plugins:
+  - plugin: python
+    out: .
+  - plugin: grpc_python
+    # This is the binary that the gRPC C++ source builds into bin/.
+    path: grpc_python_plugin
+    out: .
