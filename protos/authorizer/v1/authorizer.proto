@@ -199,6 +199,9 @@ message ExtraData
 message AuthorizeRequest
 {
   AuthorizationCommon common = 1;
+  // The canonical user ID is returned by the Authenticator and is reflected
+  // back to the Authorizer verbatim.
+  string canonical_user_id = 9;
   // user_arn is returned by the Authenticator and is reflected back
   // to the Authorizer verbatim.
   string user_arn = 2;
