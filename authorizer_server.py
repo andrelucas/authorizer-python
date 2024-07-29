@@ -23,32 +23,72 @@ import sys
 from authorizer.v1 import authorizer_pb2_grpc
 from authorizer.v1 import authorizer_pb2
 
-def fmt_common(desc, common):
-    """
-    Dump the common fields to the log.
-    """
-    tsiso = common.timestamp.ToDatetime().isoformat()
-    return f"{desc} ts=({tsiso}), id={common.authorization_id}"
+from authorizer_common import fmt_authorize_request, fmt_authorize_response, fmt_common
+
+
+class AuthzRequest:
+    def __init__(self, request):
+        """
+        Create an authorization request from the incoming gRPC
+        AuthorizeRequest message.
+        """
+        self.canonical_user_id = request.canonical_user_id
+        self.user_arn = request.user_arn
+        if request.HasField("assuming_user_arn"):
+            self.assuming_user_arn = request.assuming_user_arn
+        else:
+            self.assuming_user_arn = None
+        self.account_arn = request.account_arn
+        self.opcode = request.opcode
+        self.bucket_name = request.bucket_name
+        self.object_key_name = request.object_key_name
+        # XXX extra data
+
+    def __str__(self):
+        return f"""AuthzRequest(canonical_user_id={self.canonical_user_id},
+          user={self.user_arn}, assuming_user_arn={self.assuming_user_arn},
+          account_arn={self.account_arn},
+          opcode={self.opcode}, bucket={self.bucket_name},
+          object_key_name={self.object_key_name})"""
+
 
 class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
-
     def Ping(self, request, context):
-        logging.debug(f"Received Ping({request})")
-        logging.debug(fmt_common("Ping Request", request.common))
+        logging.debug(f"Ping request: {fmt_common(request.common)}")
         response = authorizer_pb2.PingResponse()
         response.common.timestamp.GetCurrentTime()
         response.common.authorization_id = request.common.authorization_id
-        logging.debug(fmt_common("Ping Response", response.common))
+        logging.debug(f"Ping response: {fmt_common(response.common)}")
         return response
 
     def Authorize(self, request, context):
-        logging.debug(f"Received Authorize({request})")
-        logging.debug(fmt_common("Authorize Request", request.common))
-        response = authorizer_pb2.AuthorizeResponse()
-        response.common.timestamp.GetCurrentTime()
-        response.common.authorization_id = request.common.authorization_id
-        logging.debug(fmt_common("Authorize Response", response.common))
-        return response
+        logging.debug(fmt_authorize_request(request))
+
+        try:
+            response = authorizer_pb2.AuthorizeResponse()
+            response.common.timestamp.GetCurrentTime()
+            response.common.authorization_id = request.common.authorization_id
+
+            try:
+                authreq = AuthzRequest(request)
+
+                # XXX actually authorize...
+                response.result.code = (
+                    authorizer_pb2.AuthorizationResultCode.AUTHZ_RESULT_ALLOW
+                )
+
+            except Exception as e:
+                logging.error(f"Failed to parse request: {e}")
+                context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Invalid request")
+
+            logging.debug(fmt_authorize_response(response))
+
+            return response
+
+        except Exception as e:
+            logging.error(f"Failed to parse request: {e}")
+            context.abort(grpc.StatusCode.INTERNAL, "Internal error")
+
 
 def _load_credential_from_file(filepath):
     """https://github.com/grpc/grpc/blob/master/examples/python/auth/_credentials.py"""
@@ -67,7 +107,9 @@ def run(args):
                 ("grpc.so_reuseport", 0),
             ),  # This apparently helps detect port reuse - see https://github.com/grpc/grpc/issues/16920
         )
-        authorizer_pb2_grpc.add_AuthorizerServiceServicer_to_server(AuthorizerServer(), server)
+        authorizer_pb2_grpc.add_AuthorizerServiceServicer_to_server(
+            AuthorizerServer(), server
+        )
 
         if args.tls:
             server_crt = _load_credential_from_file(args.server_cert)

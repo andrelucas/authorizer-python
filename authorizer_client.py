@@ -15,8 +15,14 @@ import logging
 import os
 import sys
 
-from authorizer.v1 import authorizer_pb2_grpc as authorizer_pb2_grpc
-from authorizer.v1 import authorizer_pb2 as authorizer_pb2
+from authorizer.v1 import authorizer_pb2_grpc
+from authorizer.v1 import authorizer_pb2
+
+from authorizer_common import (
+    opcode_to_enum,
+    fmt_authorize_request,
+    fmt_authorize_response,
+)
 
 
 def dump_common(desc, common):
@@ -39,7 +45,7 @@ def ping(stub, args):
         dump_common("Request", req.common)
         response = stub.Ping(req)
         dump_common("Response", response.common)
-        return response.common.authorization_id == args.id
+        return response.common.authorization_id.encode() == args.id
 
     except grpc.RpcError as e:
         # Unpack the error.
@@ -59,20 +65,56 @@ def ping(stub, args):
 
         return False
 
+
+def pack_authorize_request(req, args):
+    """
+    Pack the AuthorizeRequest with the args.
+    """
+    req.common.timestamp.GetCurrentTime()
+    req.common.authorization_id = args.id
+    req.bucket_name = args.bucket
+    req.object_key_name = args.object_key
+    req.opcode = args.opcode_enum
+    req.canonical_user_id = args.canonical_user_id
+    req.user_arn = args.user_arn
+    if args.assuming_user_arn is not None:
+        req.assuming_user_arn = args.assuming_user_arn
+    req.account_arn = args.account_arn
+
+
 def authorize(stub, args):
     """
     Authorize the server.
     """
     try:
-        logging.debug(f"Sending Authorize({args.id})")
         req = authorizer_pb2.AuthorizeRequest()
-        req.common.timestamp.GetCurrentTime()
-        req.common.authorization_id = args.id
-        dump_common("Request", req.common)
-        # XXX implement!
+        pack_authorize_request(req, args)
+        logging.debug(fmt_authorize_request(req))
         response = stub.Authorize(req)
-        dump_common("Response", response.common)
-        return True # XXX
+        logging.debug(fmt_authorize_response(response))
+        if response.common.authorization_id.encode() != args.id:
+            logging.error(
+                f"Authorization ID mismatch: {response.common.authorization_id} != {args.id}"
+            )
+            return False
+        result = response.result
+        code = result.code
+        rtype = authorizer_pb2.AuthorizationResultCode
+        if code == rtype.AUTHZ_RESULT_UNSPECIFIED:
+            logging.error("Authorization result is not specified")
+            return False
+        elif code == rtype.AUTHZ_RESULT_ALLOW:
+            logging.info("Authorization allowed")
+            return True
+        elif code == rtype.AUTHZ_RESULT_DENY:
+            logging.info("Authorization denied")
+            return False
+        elif code == rtype.AUTHZ_RESULT_EXTRA_DATA_REQUIRED:
+            logging.info("Authorization requires extra data")
+            return False
+        else:
+            rname = authorizer_pb2.AuthorizationResultCode.Name(code)
+            logging.error(f"Unknown authorization result: {rname}")
 
     except grpc.RpcError as e:
         # Unpack the error.
@@ -120,6 +162,18 @@ def main(argv):
     p.add_argument("command", help="command to run", choices=["ping", "authorize"])
     # XXX command arguments
     p.add_argument("--id", help="authorization_id field override (default is random)")
+    p.add_argument("-b", "--bucket", help="bucket to authorize", default="")
+    p.add_argument("-k", "--object-key", help="object key to authorize", default="")
+    p.add_argument("-o", "--opcode", help="opcode/action to authorize")
+    p.add_argument(
+        "-u", "--canonical-user-id", help="canonical user ID to authorize", default=""
+    )
+    p.add_argument("--user-arn", help="user ARN to authorize", default="")
+    p.add_argument(
+        "--assuming-user-arn", help="assuming user ARN to authorize", default=None
+    )
+    p.add_argument("--account-arn", help="account ARN to authorize", default="")
+    # XXX extra data
 
     p.add_argument(
         "-t", "--tls", help="connect to the server using TLS", action="store_true"
@@ -159,6 +213,15 @@ def main(argv):
     # generate a random one.
     if not args.id:
         args.id = base64.b64encode(os.urandom(16))
+
+    if args.command == "authorize":
+        if not args.opcode:
+            logging.error("Authorize requires an opcode")
+            sys.exit(2)
+        if not args.opcode in opcode_to_enum:
+            logging.error(f"Unknown opcode '{args.opcode}'")
+            sys.exit(2)
+        args.opcode_enum = opcode_to_enum[args.opcode]
 
     if args.tls:
         root_crt = _load_credential_from_file(args.ca_cert)
