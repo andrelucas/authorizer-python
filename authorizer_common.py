@@ -93,9 +93,17 @@ def fmt_authorize_request(req: authorizer_pb2.AuthorizeRequest):
         assuming_user_arn_str = f"'{req.assuming_user_arn}'"
     else:
         assuming_user_arn_str = "[None]"
+    if req.environment:
+        envlist=[]
+        for key, value in req.environment.items():
+            envlist.append(f"{key}='{value}'")
+        envstr="(" + ", ".join(envlist) + ")"
+    else:
+        envstr="[None]"
     return (
         f"AuthorizeRequest(common={fmt_common(req.common)}, "
         f"bucket='{req.bucket_name}', object_key='{req.object_key_name}', opcode={opstr}, "
+        f"environment={envstr}, "
         f"canonical_user_id='{req.canonical_user_id}', user_arn='{req.user_arn}', assuming_user_arn={assuming_user_arn_str}, account_arn='{req.account_arn}')"
     )
 

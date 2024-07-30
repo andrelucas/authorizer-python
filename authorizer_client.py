@@ -80,6 +80,10 @@ def pack_authorize_request(req, args):
     if args.assuming_user_arn is not None:
         req.assuming_user_arn = args.assuming_user_arn
     req.account_arn = args.account_arn
+    # XXX extra data
+    for env in args.environment:
+        key, value = env.split("=", 1)
+        req.environment[key] = value
 
 
 def authorize(stub, args):
@@ -165,6 +169,12 @@ def main(argv):
     p.add_argument("-b", "--bucket", help="bucket to authorize", default="")
     p.add_argument("-k", "--object-key", help="object key to authorize", default="")
     p.add_argument("-o", "--opcode", help="opcode/action to authorize")
+    p.add_argument(
+        "-e",
+        "--environment",
+        help="IAM environment entry in the form key=value",
+        action="append",
+    )
     p.add_argument(
         "-u", "--canonical-user-id", help="canonical user ID to authorize", default=""
     )
