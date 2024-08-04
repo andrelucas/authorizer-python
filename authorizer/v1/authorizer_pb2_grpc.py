@@ -19,10 +19,10 @@ class AuthorizerServiceStub(object):
                 request_serializer=authorizer_dot_v1_dot_authorizer__pb2.PingRequest.SerializeToString,
                 response_deserializer=authorizer_dot_v1_dot_authorizer__pb2.PingResponse.FromString,
                 )
-        self.Authorize = channel.unary_unary(
-                '/authorizer.v1.AuthorizerService/Authorize',
-                request_serializer=authorizer_dot_v1_dot_authorizer__pb2.AuthorizeRequest.SerializeToString,
-                response_deserializer=authorizer_dot_v1_dot_authorizer__pb2.AuthorizeResponse.FromString,
+        self.AuthorizeV2 = channel.unary_unary(
+                '/authorizer.v1.AuthorizerService/AuthorizeV2',
+                request_serializer=authorizer_dot_v1_dot_authorizer__pb2.AuthorizeV2Request.SerializeToString,
+                response_deserializer=authorizer_dot_v1_dot_authorizer__pb2.AuthorizeV2Response.FromString,
                 )
 
 
@@ -38,7 +38,7 @@ class AuthorizerServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def Authorize(self, request, context):
+    def AuthorizeV2(self, request, context):
         """A request for authorization. Provide easily-available information about
         the request such as user, bucket and object key, so that the Authorizer
         can work out what additional data it will need to make a proper
@@ -60,10 +60,10 @@ def add_AuthorizerServiceServicer_to_server(servicer, server):
                     request_deserializer=authorizer_dot_v1_dot_authorizer__pb2.PingRequest.FromString,
                     response_serializer=authorizer_dot_v1_dot_authorizer__pb2.PingResponse.SerializeToString,
             ),
-            'Authorize': grpc.unary_unary_rpc_method_handler(
-                    servicer.Authorize,
-                    request_deserializer=authorizer_dot_v1_dot_authorizer__pb2.AuthorizeRequest.FromString,
-                    response_serializer=authorizer_dot_v1_dot_authorizer__pb2.AuthorizeResponse.SerializeToString,
+            'AuthorizeV2': grpc.unary_unary_rpc_method_handler(
+                    servicer.AuthorizeV2,
+                    request_deserializer=authorizer_dot_v1_dot_authorizer__pb2.AuthorizeV2Request.FromString,
+                    response_serializer=authorizer_dot_v1_dot_authorizer__pb2.AuthorizeV2Response.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -93,7 +93,7 @@ class AuthorizerService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def Authorize(request,
+    def AuthorizeV2(request,
             target,
             options=(),
             channel_credentials=None,
@@ -103,8 +103,8 @@ class AuthorizerService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/authorizer.v1.AuthorizerService/Authorize',
-            authorizer_dot_v1_dot_authorizer__pb2.AuthorizeRequest.SerializeToString,
-            authorizer_dot_v1_dot_authorizer__pb2.AuthorizeResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/authorizer.v1.AuthorizerService/AuthorizeV2',
+            authorizer_dot_v1_dot_authorizer__pb2.AuthorizeV2Request.SerializeToString,
+            authorizer_dot_v1_dot_authorizer__pb2.AuthorizeV2Response.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

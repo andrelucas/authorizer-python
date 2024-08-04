@@ -53,6 +53,9 @@ class AuthzRequest:
 
 
 class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
+
+    # Note: Authorize() (the original service) not implemented here.
+
     def Ping(self, request, context):
         logging.debug(f"Ping request: {fmt_common(request.common)}")
         response = authorizer_pb2.PingResponse()
@@ -61,11 +64,11 @@ class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
         logging.debug(f"Ping response: {fmt_common(response.common)}")
         return response
 
-    def Authorize(self, request, context):
+    def AuthorizeV2(self, request: authorizer_pb2.AuthorizeV2Request, context):
         logging.debug(fmt_authorize_request(request))
 
         try:
-            response = authorizer_pb2.AuthorizeResponse()
+            response = authorizer_pb2.AuthorizeV2Response()
             response.common.timestamp.GetCurrentTime()
             response.common.authorization_id = request.common.authorization_id
 

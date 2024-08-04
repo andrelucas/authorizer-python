@@ -85,9 +85,9 @@ def fmt_common(common):
     return MessageToJson(common, indent=None)
 
 
-def fmt_authorize_request(req: authorizer_pb2.AuthorizeRequest):
+def fmt_authorize_request(req: authorizer_pb2.AuthorizeV2Request):
     return MessageToJson(req, indent=None)
 
 
-def fmt_authorize_response(response: authorizer_pb2.AuthorizeResponse) -> str:
+def fmt_authorize_response(response: authorizer_pb2.AuthorizeV2Response) -> str:
     return MessageToJson(response, indent=None)

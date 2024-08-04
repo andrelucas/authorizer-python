@@ -78,15 +78,15 @@ def pack_authorize_request(req, args):
         req.environment[key].key.append(value)
 
 
-def authorize(stub, args):
+def authorize_v2(stub, args):
     """
     Authorize the server.
     """
     try:
-        req = authorizer_pb2.AuthorizeRequest()
+        req = authorizer_pb2.AuthorizeV2Request()
         pack_authorize_request(req, args)
         logging.debug(fmt_authorize_request(req))
-        response = stub.Authorize(req)
+        response = stub.AuthorizeV2(req)
         logging.debug(fmt_authorize_response(response))
         if response.common.authorization_id.encode() != args.id:
             logging.error(
@@ -140,7 +140,7 @@ def issue(channel, args):
     if args.command == "ping":
         return ping(stub, args)
     elif args.command == "authorize":
-        return authorize(stub, args)
+        return authorize_v2(stub, args)
     else:
         logging.error(f"Unknown command '{args.command}'")
         sys.exit(2)
