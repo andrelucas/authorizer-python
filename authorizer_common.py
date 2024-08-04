@@ -3,6 +3,8 @@
 from authorizer.v1 import authorizer_pb2_grpc
 from authorizer.v1 import authorizer_pb2
 
+from google.protobuf.json_format import MessageToJson
+
 op_enum = authorizer_pb2.S3Opcode
 
 opcode_to_enum = {
@@ -80,40 +82,12 @@ opcode_to_enum = {
 
 
 def fmt_common(common):
-    """
-    Dump the common fields to the log.
-    """
-    tsiso = common.timestamp.ToDatetime().isoformat()
-    return f"Common(ts={tsiso}, id={common.authorization_id})"
+    return MessageToJson(common, indent=None)
 
 
 def fmt_authorize_request(req: authorizer_pb2.AuthorizeRequest):
-    opstr = authorizer_pb2.S3Opcode.Name(req.opcode)
-    if req.HasField("assuming_user_arn"):
-        assuming_user_arn_str = f"'{req.assuming_user_arn}'"
-    else:
-        assuming_user_arn_str = "[None]"
-    if req.environment:
-        envlist=[]
-        for key, value in req.environment.items():
-            envlist.append(f"{key}='{value}'")
-        envstr="(" + ", ".join(envlist) + ")"
-    else:
-        envstr="[None]"
-    return (
-        f"AuthorizeRequest(common={fmt_common(req.common)}, "
-        f"bucket='{req.bucket_name}', object_key='{req.object_key_name}', opcode={opstr}, "
-        f"environment={envstr}, "
-        f"canonical_user_id='{req.canonical_user_id}', user_arn='{req.user_arn}', assuming_user_arn={assuming_user_arn_str}, account_arn='{req.account_arn}')"
-    )
+    return MessageToJson(req, indent=None)
 
 
 def fmt_authorize_response(response: authorizer_pb2.AuthorizeResponse) -> str:
-    """
-    Format an authorization response for logging.
-    """
-    codestr = authorizer_pb2.AuthorizationResultCode.Name(response.result.code)
-    return (
-        f"AuthorizeResponse(code={codestr}, "
-        f"message={response.result.error_message}, detail={response.result.error_detail})"
-    )
+    return MessageToJson(response, indent=None)

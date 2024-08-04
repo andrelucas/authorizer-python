@@ -16,7 +16,7 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1e\x61uthorizer/v1/authorizer.proto\x12\rauthorizer.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"z\n\x13\x41uthorizationCommon\x12\x38\n\ttimestamp\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\ttimestamp\x12)\n\x10\x61uthorization_id\x18\x02 \x01(\tR\x0f\x61uthorizationId\"I\n\x0bPingRequest\x12:\n\x06\x63ommon\x18\x01 \x01(\x0b\x32\".authorizer.v1.AuthorizationCommonR\x06\x63ommon\"J\n\x0cPingResponse\x12:\n\x06\x63ommon\x18\x01 \x01(\x0b\x32\".authorizer.v1.AuthorizationCommonR\x06\x63ommon\"\x99\x01\n\x13\x41uthorizationResult\x12#\n\rerror_message\x18\x01 \x01(\tR\x0c\x65rrorMessage\x12!\n\x0c\x65rror_detail\x18\x02 \x01(\tR\x0b\x65rrorDetail\x12:\n\x04\x63ode\x18\x03 \x01(\x0e\x32&.authorizer.v1.AuthorizationResultCodeR\x04\x63ode\"_\n\x14\x45xtraDataRequirement\x12\x1f\n\x0b\x62ucket_tags\x18\x01 \x01(\x08R\nbucketTags\x12&\n\x0fobject_key_tags\x18\x02 \x01(\x08R\robjectKeyTags\"\xac\x02\n\tExtraData\x12I\n\x0b\x62ucket_tags\x18\x01 \x03(\x0b\x32(.authorizer.v1.ExtraData.BucketTagsEntryR\nbucketTags\x12S\n\x0fobject_key_tags\x18\x02 \x03(\x0b\x32+.authorizer.v1.ExtraData.ObjectKeyTagsEntryR\robjectKeyTags\x1a=\n\x0f\x42ucketTagsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\tR\x05value:\x02\x38\x01\x1a@\n\x12ObjectKeyTagsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\tR\x05value:\x02\x38\x01\"\xd8\x04\n\x10\x41uthorizeRequest\x12:\n\x06\x63ommon\x18\x01 \x01(\x0b\x32\".authorizer.v1.AuthorizationCommonR\x06\x63ommon\x12*\n\x11\x63\x61nonical_user_id\x18\t \x01(\tR\x0f\x63\x61nonicalUserId\x12\x19\n\x08user_arn\x18\x02 \x01(\tR\x07userArn\x12/\n\x11\x61ssuming_user_arn\x18\x03 \x01(\tH\x00R\x0f\x61ssumingUserArn\x88\x01\x01\x12\x1f\n\x0b\x61\x63\x63ount_arn\x18\x04 \x01(\tR\naccountArn\x12/\n\x06opcode\x18\x05 \x01(\x0e\x32\x17.authorizer.v1.S3OpcodeR\x06opcode\x12\x1f\n\x0b\x62ucket_name\x18\x06 \x01(\tR\nbucketName\x12&\n\x0fobject_key_name\x18\x07 \x01(\tR\robjectKeyName\x12R\n\x0b\x65nvironment\x18\n \x03(\x0b\x32\x30.authorizer.v1.AuthorizeRequest.EnvironmentEntryR\x0b\x65nvironment\x12<\n\nextra_data\x18\x08 \x01(\x0b\x32\x18.authorizer.v1.ExtraDataH\x01R\textraData\x88\x01\x01\x1a>\n\x10\x45nvironmentEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\tR\x05value:\x02\x38\x01\x42\x14\n\x12_assuming_user_arnB\r\n\x0b_extra_data\"\xfd\x01\n\x11\x41uthorizeResponse\x12:\n\x06\x63ommon\x18\x01 \x01(\x0b\x32\".authorizer.v1.AuthorizationCommonR\x06\x63ommon\x12:\n\x06result\x18\x02 \x01(\x0b\x32\".authorizer.v1.AuthorizationResultR\x06result\x12X\n\x13\x65xtra_data_required\x18\x03 \x01(\x0b\x32#.authorizer.v1.ExtraDataRequirementH\x00R\x11\x65xtraDataRequired\x88\x01\x01\x42\x16\n\x14_extra_data_required*\xd3\x01\n\x17\x41uthorizationResultCode\x12\x1c\n\x18\x41UTHZ_RESULT_UNSPECIFIED\x10\x00\x12\x16\n\x12\x41UTHZ_RESULT_ALLOW\x10\x01\x12\x15\n\x11\x41UTHZ_RESULT_DENY\x10\x02\x12$\n AUTHZ_RESULT_EXTRA_DATA_REQUIRED\x10\x03\x12\x1f\n\x1b\x41UTHZ_RESULT_INTERNAL_ERROR\x10\x04\x12$\n AUTHZ_RESULT_RATE_LIMIT_EXCEEDED\x10\x05*\xe7\x14\n\x08S3Opcode\x12\x19\n\x15S3_OPCODE_UNSPECIFIED\x10\x00\x12\x18\n\x14S3_OPCODE_GET_OBJECT\x10\x01\x12 \n\x1cS3_OPCODE_GET_OBJECT_VERSION\x10\x02\x12\x18\n\x14S3_OPCODE_PUT_OBJECT\x10\x03\x12\x1c\n\x18S3_OPCODE_GET_OBJECT_ACL\x10\x04\x12$\n S3_OPCODE_GET_OBJECT_VERSION_ACL\x10\x05\x12\x1c\n\x18S3_OPCODE_PUT_OBJECT_ACL\x10\x06\x12$\n S3_OPCODE_PUT_OBJECT_VERSION_ACL\x10\x07\x12\x1b\n\x17S3_OPCODE_DELETE_OBJECT\x10\x08\x12#\n\x1fS3_OPCODE_DELETE_OBJECT_VERSION\x10\t\x12)\n%S3_OPCODE_LIST_MULTIPART_UPLOAD_PARTS\x10\n\x12$\n S3_OPCODE_ABORT_MULTIPART_UPLOAD\x10\x0b\x12 \n\x1cS3_OPCODE_GET_OBJECT_TORRENT\x10\x0c\x12(\n$S3_OPCODE_GET_OBJECT_VERSION_TORRENT\x10\r\x12\x1c\n\x18S3_OPCODE_RESTORE_OBJECT\x10\x0e\x12\x1b\n\x17S3_OPCODE_CREATE_BUCKET\x10\x0f\x12\x1b\n\x17S3_OPCODE_DELETE_BUCKET\x10\x10\x12\x19\n\x15S3_OPCODE_LIST_BUCKET\x10\x11\x12\"\n\x1eS3_OPCODE_LIST_BUCKET_VERSIONS\x10\x12\x12!\n\x1dS3_OPCODE_LIST_ALL_MY_BUCKETS\x10\x13\x12+\n\'S3_OPCODE_LIST_BUCKET_MULTIPART_UPLOADS\x10\x14\x12*\n&S3_OPCODE_GET_ACCELERATE_CONFIGURATION\x10\x15\x12*\n&S3_OPCODE_PUT_ACCELERATE_CONFIGURATION\x10\x16\x12\x1c\n\x18S3_OPCODE_GET_BUCKET_ACL\x10\x17\x12\x1c\n\x18S3_OPCODE_PUT_BUCKET_ACL\x10\x18\x12\x1d\n\x19S3_OPCODE_GET_BUCKET_CORS\x10\x19\x12\x1d\n\x19S3_OPCODE_PUT_BUCKET_CORS\x10\x1a\x12#\n\x1fS3_OPCODE_GET_BUCKET_VERSIONING\x10\x1b\x12#\n\x1fS3_OPCODE_PUT_BUCKET_VERSIONING\x10\x1c\x12(\n$S3_OPCODE_GET_BUCKET_REQUEST_PAYMENT\x10\x1d\x12(\n$S3_OPCODE_PUT_BUCKET_REQUEST_PAYMENT\x10\x1e\x12!\n\x1dS3_OPCODE_GET_BUCKET_LOCATION\x10\x1f\x12\x1f\n\x1bS3_OPCODE_GET_BUCKET_POLICY\x10 \x12\"\n\x1eS3_OPCODE_DELETE_BUCKET_POLICY\x10!\x12\x1f\n\x1bS3_OPCODE_PUT_BUCKET_POLICY\x10\"\x12%\n!S3_OPCODE_GET_BUCKET_NOTIFICATION\x10#\x12%\n!S3_OPCODE_PUT_BUCKET_NOTIFICATION\x10$\x12 \n\x1cS3_OPCODE_GET_BUCKET_LOGGING\x10%\x12 \n\x1cS3_OPCODE_PUT_BUCKET_LOGGING\x10&\x12 \n\x1cS3_OPCODE_GET_BUCKET_TAGGING\x10\'\x12 \n\x1cS3_OPCODE_PUT_BUCKET_TAGGING\x10(\x12 \n\x1cS3_OPCODE_GET_BUCKET_WEBSITE\x10)\x12 \n\x1cS3_OPCODE_PUT_BUCKET_WEBSITE\x10*\x12#\n\x1fS3_OPCODE_DELETE_BUCKET_WEBSITE\x10+\x12)\n%S3_OPCODE_GET_LIFECYCLE_CONFIGURATION\x10,\x12)\n%S3_OPCODE_PUT_LIFECYCLE_CONFIGURATION\x10-\x12+\n\'S3_OPCODE_PUT_REPLICATION_CONFIGURATION\x10.\x12+\n\'S3_OPCODE_GET_REPLICATION_CONFIGURATION\x10/\x12.\n*S3_OPCODE_DELETE_REPLICATION_CONFIGURATION\x10\x30\x12 \n\x1cS3_OPCODE_GET_OBJECT_TAGGING\x10\x31\x12 \n\x1cS3_OPCODE_PUT_OBJECT_TAGGING\x10\x32\x12#\n\x1fS3_OPCODE_DELETE_OBJECT_TAGGING\x10\x33\x12(\n$S3_OPCODE_GET_OBJECT_VERSION_TAGGING\x10\x34\x12(\n$S3_OPCODE_PUT_OBJECT_VERSION_TAGGING\x10\x35\x12+\n\'S3_OPCODE_DELETE_OBJECT_VERSION_TAGGING\x10\x36\x12\x32\n.S3_OPCODE_PUT_BUCKET_OBJECT_LOCK_CONFIGURATION\x10\x37\x12\x32\n.S3_OPCODE_GET_BUCKET_OBJECT_LOCK_CONFIGURATION\x10\x38\x12\"\n\x1eS3_OPCODE_PUT_OBJECT_RETENTION\x10\x39\x12\"\n\x1eS3_OPCODE_GET_OBJECT_RETENTION\x10:\x12#\n\x1fS3_OPCODE_PUT_OBJECT_LEGAL_HOLD\x10;\x12#\n\x1fS3_OPCODE_GET_OBJECT_LEGAL_HOLD\x10<\x12)\n%S3_OPCODE_BYPASS_GOVERNANCE_RETENTION\x10=\x12&\n\"S3_OPCODE_GET_BUCKET_POLICY_STATUS\x10>\x12%\n!S3_OPCODE_PUT_PUBLIC_ACCESS_BLOCK\x10?\x12%\n!S3_OPCODE_GET_PUBLIC_ACCESS_BLOCK\x10@\x12(\n$S3_OPCODE_DELETE_PUBLIC_ACCESS_BLOCK\x10\x41\x12,\n(S3_OPCODE_GET_BUCKET_PUBLIC_ACCESS_BLOCK\x10\x42\x12,\n(S3_OPCODE_PUT_BUCKET_PUBLIC_ACCESS_BLOCK\x10\x43\x12/\n+S3_OPCODE_DELETE_BUCKET_PUBLIC_ACCESS_BLOCK\x10\x44\x12#\n\x1fS3_OPCODE_GET_BUCKET_ENCRYPTION\x10\x45\x12#\n\x1fS3_OPCODE_PUT_BUCKET_ENCRYPTION\x10\x46\x32\xa4\x01\n\x11\x41uthorizerService\x12?\n\x04Ping\x12\x1a.authorizer.v1.PingRequest\x1a\x1b.authorizer.v1.PingResponse\x12N\n\tAuthorize\x12\x1f.authorizer.v1.AuthorizeRequest\x1a .authorizer.v1.AuthorizeResponseB\xb9\x01\n\x11\x63om.authorizer.v1B\x0f\x41uthorizerProtoP\x01Z>bits.linode.com/LinodeApi/obj-endpoint/gen/proto/authorizer/v1\xa2\x02\x03\x41XX\xaa\x02\rAuthorizer.V1\xca\x02\rAuthorizer\\V1\xe2\x02\x19\x41uthorizer\\V1\\GPBMetadata\xea\x02\x0e\x41uthorizer::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1e\x61uthorizer/v1/authorizer.proto\x12\rauthorizer.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"z\n\x13\x41uthorizationCommon\x12\x38\n\ttimestamp\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\ttimestamp\x12)\n\x10\x61uthorization_id\x18\x02 \x01(\tR\x0f\x61uthorizationId\"I\n\x0bPingRequest\x12:\n\x06\x63ommon\x18\x01 \x01(\x0b\x32\".authorizer.v1.AuthorizationCommonR\x06\x63ommon\"J\n\x0cPingResponse\x12:\n\x06\x63ommon\x18\x01 \x01(\x0b\x32\".authorizer.v1.AuthorizationCommonR\x06\x63ommon\"\x99\x01\n\x13\x41uthorizationResult\x12#\n\rerror_message\x18\x01 \x01(\tR\x0c\x65rrorMessage\x12!\n\x0c\x65rror_detail\x18\x02 \x01(\tR\x0b\x65rrorDetail\x12:\n\x04\x63ode\x18\x03 \x01(\x0e\x32&.authorizer.v1.AuthorizationResultCodeR\x04\x63ode\"a\n\x16\x45xtraDataSpecification\x12\x1f\n\x0b\x62ucket_tags\x18\x01 \x01(\x08R\nbucketTags\x12&\n\x0fobject_key_tags\x18\x02 \x01(\x08R\robjectKeyTags\"\xac\x02\n\tExtraData\x12I\n\x0b\x62ucket_tags\x18\x01 \x03(\x0b\x32(.authorizer.v1.ExtraData.BucketTagsEntryR\nbucketTags\x12S\n\x0fobject_key_tags\x18\x02 \x03(\x0b\x32+.authorizer.v1.ExtraData.ObjectKeyTagsEntryR\robjectKeyTags\x1a=\n\x0f\x42ucketTagsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\tR\x05value:\x02\x38\x01\x1a@\n\x12ObjectKeyTagsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\tR\x05value:\x02\x38\x01\"\x9a\x06\n\x10\x41uthorizeRequest\x12:\n\x06\x63ommon\x18\x01 \x01(\x0b\x32\".authorizer.v1.AuthorizationCommonR\x06\x63ommon\x12*\n\x11\x63\x61nonical_user_id\x18\t \x01(\tR\x0f\x63\x61nonicalUserId\x12\x19\n\x08user_arn\x18\x02 \x01(\tR\x07userArn\x12/\n\x11\x61ssuming_user_arn\x18\x03 \x01(\tH\x00R\x0f\x61ssumingUserArn\x88\x01\x01\x12\x1f\n\x0b\x61\x63\x63ount_arn\x18\x04 \x01(\tR\naccountArn\x12/\n\x06opcode\x18\x05 \x01(\x0e\x32\x17.authorizer.v1.S3OpcodeR\x06opcode\x12\x1f\n\x0b\x62ucket_name\x18\x06 \x01(\tR\nbucketName\x12&\n\x0fobject_key_name\x18\x07 \x01(\tR\robjectKeyName\x12R\n\x0b\x65nvironment\x18\n \x03(\x0b\x32\x30.authorizer.v1.AuthorizeRequest.EnvironmentEntryR\x0b\x65nvironment\x12Z\n\x13\x65xtra_data_provided\x18\x0b \x01(\x0b\x32%.authorizer.v1.ExtraDataSpecificationH\x01R\x11\x65xtraDataProvided\x88\x01\x01\x12<\n\nextra_data\x18\x08 \x01(\x0b\x32\x18.authorizer.v1.ExtraDataH\x02R\textraData\x88\x01\x01\x1a\x1f\n\x0bIAMMapEntry\x12\x10\n\x03key\x18\x01 \x03(\tR\x03key\x1ak\n\x10\x45nvironmentEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x41\n\x05value\x18\x02 \x01(\x0b\x32+.authorizer.v1.AuthorizeRequest.IAMMapEntryR\x05value:\x02\x38\x01\x42\x14\n\x12_assuming_user_arnB\x16\n\x14_extra_data_providedB\r\n\x0b_extra_data\"\xff\x01\n\x11\x41uthorizeResponse\x12:\n\x06\x63ommon\x18\x01 \x01(\x0b\x32\".authorizer.v1.AuthorizationCommonR\x06\x63ommon\x12:\n\x06result\x18\x02 \x01(\x0b\x32\".authorizer.v1.AuthorizationResultR\x06result\x12Z\n\x13\x65xtra_data_required\x18\x03 \x01(\x0b\x32%.authorizer.v1.ExtraDataSpecificationH\x00R\x11\x65xtraDataRequired\x88\x01\x01\x42\x16\n\x14_extra_data_required*\xd3\x01\n\x17\x41uthorizationResultCode\x12\x1c\n\x18\x41UTHZ_RESULT_UNSPECIFIED\x10\x00\x12\x16\n\x12\x41UTHZ_RESULT_ALLOW\x10\x01\x12\x15\n\x11\x41UTHZ_RESULT_DENY\x10\x02\x12$\n AUTHZ_RESULT_EXTRA_DATA_REQUIRED\x10\x03\x12\x1f\n\x1b\x41UTHZ_RESULT_INTERNAL_ERROR\x10\x04\x12$\n AUTHZ_RESULT_RATE_LIMIT_EXCEEDED\x10\x05*\xe7\x14\n\x08S3Opcode\x12\x19\n\x15S3_OPCODE_UNSPECIFIED\x10\x00\x12\x18\n\x14S3_OPCODE_GET_OBJECT\x10\x01\x12 \n\x1cS3_OPCODE_GET_OBJECT_VERSION\x10\x02\x12\x18\n\x14S3_OPCODE_PUT_OBJECT\x10\x03\x12\x1c\n\x18S3_OPCODE_GET_OBJECT_ACL\x10\x04\x12$\n S3_OPCODE_GET_OBJECT_VERSION_ACL\x10\x05\x12\x1c\n\x18S3_OPCODE_PUT_OBJECT_ACL\x10\x06\x12$\n S3_OPCODE_PUT_OBJECT_VERSION_ACL\x10\x07\x12\x1b\n\x17S3_OPCODE_DELETE_OBJECT\x10\x08\x12#\n\x1fS3_OPCODE_DELETE_OBJECT_VERSION\x10\t\x12)\n%S3_OPCODE_LIST_MULTIPART_UPLOAD_PARTS\x10\n\x12$\n S3_OPCODE_ABORT_MULTIPART_UPLOAD\x10\x0b\x12 \n\x1cS3_OPCODE_GET_OBJECT_TORRENT\x10\x0c\x12(\n$S3_OPCODE_GET_OBJECT_VERSION_TORRENT\x10\r\x12\x1c\n\x18S3_OPCODE_RESTORE_OBJECT\x10\x0e\x12\x1b\n\x17S3_OPCODE_CREATE_BUCKET\x10\x0f\x12\x1b\n\x17S3_OPCODE_DELETE_BUCKET\x10\x10\x12\x19\n\x15S3_OPCODE_LIST_BUCKET\x10\x11\x12\"\n\x1eS3_OPCODE_LIST_BUCKET_VERSIONS\x10\x12\x12!\n\x1dS3_OPCODE_LIST_ALL_MY_BUCKETS\x10\x13\x12+\n\'S3_OPCODE_LIST_BUCKET_MULTIPART_UPLOADS\x10\x14\x12*\n&S3_OPCODE_GET_ACCELERATE_CONFIGURATION\x10\x15\x12*\n&S3_OPCODE_PUT_ACCELERATE_CONFIGURATION\x10\x16\x12\x1c\n\x18S3_OPCODE_GET_BUCKET_ACL\x10\x17\x12\x1c\n\x18S3_OPCODE_PUT_BUCKET_ACL\x10\x18\x12\x1d\n\x19S3_OPCODE_GET_BUCKET_CORS\x10\x19\x12\x1d\n\x19S3_OPCODE_PUT_BUCKET_CORS\x10\x1a\x12#\n\x1fS3_OPCODE_GET_BUCKET_VERSIONING\x10\x1b\x12#\n\x1fS3_OPCODE_PUT_BUCKET_VERSIONING\x10\x1c\x12(\n$S3_OPCODE_GET_BUCKET_REQUEST_PAYMENT\x10\x1d\x12(\n$S3_OPCODE_PUT_BUCKET_REQUEST_PAYMENT\x10\x1e\x12!\n\x1dS3_OPCODE_GET_BUCKET_LOCATION\x10\x1f\x12\x1f\n\x1bS3_OPCODE_GET_BUCKET_POLICY\x10 \x12\"\n\x1eS3_OPCODE_DELETE_BUCKET_POLICY\x10!\x12\x1f\n\x1bS3_OPCODE_PUT_BUCKET_POLICY\x10\"\x12%\n!S3_OPCODE_GET_BUCKET_NOTIFICATION\x10#\x12%\n!S3_OPCODE_PUT_BUCKET_NOTIFICATION\x10$\x12 \n\x1cS3_OPCODE_GET_BUCKET_LOGGING\x10%\x12 \n\x1cS3_OPCODE_PUT_BUCKET_LOGGING\x10&\x12 \n\x1cS3_OPCODE_GET_BUCKET_TAGGING\x10\'\x12 \n\x1cS3_OPCODE_PUT_BUCKET_TAGGING\x10(\x12 \n\x1cS3_OPCODE_GET_BUCKET_WEBSITE\x10)\x12 \n\x1cS3_OPCODE_PUT_BUCKET_WEBSITE\x10*\x12#\n\x1fS3_OPCODE_DELETE_BUCKET_WEBSITE\x10+\x12)\n%S3_OPCODE_GET_LIFECYCLE_CONFIGURATION\x10,\x12)\n%S3_OPCODE_PUT_LIFECYCLE_CONFIGURATION\x10-\x12+\n\'S3_OPCODE_PUT_REPLICATION_CONFIGURATION\x10.\x12+\n\'S3_OPCODE_GET_REPLICATION_CONFIGURATION\x10/\x12.\n*S3_OPCODE_DELETE_REPLICATION_CONFIGURATION\x10\x30\x12 \n\x1cS3_OPCODE_GET_OBJECT_TAGGING\x10\x31\x12 \n\x1cS3_OPCODE_PUT_OBJECT_TAGGING\x10\x32\x12#\n\x1fS3_OPCODE_DELETE_OBJECT_TAGGING\x10\x33\x12(\n$S3_OPCODE_GET_OBJECT_VERSION_TAGGING\x10\x34\x12(\n$S3_OPCODE_PUT_OBJECT_VERSION_TAGGING\x10\x35\x12+\n\'S3_OPCODE_DELETE_OBJECT_VERSION_TAGGING\x10\x36\x12\x32\n.S3_OPCODE_PUT_BUCKET_OBJECT_LOCK_CONFIGURATION\x10\x37\x12\x32\n.S3_OPCODE_GET_BUCKET_OBJECT_LOCK_CONFIGURATION\x10\x38\x12\"\n\x1eS3_OPCODE_PUT_OBJECT_RETENTION\x10\x39\x12\"\n\x1eS3_OPCODE_GET_OBJECT_RETENTION\x10:\x12#\n\x1fS3_OPCODE_PUT_OBJECT_LEGAL_HOLD\x10;\x12#\n\x1fS3_OPCODE_GET_OBJECT_LEGAL_HOLD\x10<\x12)\n%S3_OPCODE_BYPASS_GOVERNANCE_RETENTION\x10=\x12&\n\"S3_OPCODE_GET_BUCKET_POLICY_STATUS\x10>\x12%\n!S3_OPCODE_PUT_PUBLIC_ACCESS_BLOCK\x10?\x12%\n!S3_OPCODE_GET_PUBLIC_ACCESS_BLOCK\x10@\x12(\n$S3_OPCODE_DELETE_PUBLIC_ACCESS_BLOCK\x10\x41\x12,\n(S3_OPCODE_GET_BUCKET_PUBLIC_ACCESS_BLOCK\x10\x42\x12,\n(S3_OPCODE_PUT_BUCKET_PUBLIC_ACCESS_BLOCK\x10\x43\x12/\n+S3_OPCODE_DELETE_BUCKET_PUBLIC_ACCESS_BLOCK\x10\x44\x12#\n\x1fS3_OPCODE_GET_BUCKET_ENCRYPTION\x10\x45\x12#\n\x1fS3_OPCODE_PUT_BUCKET_ENCRYPTION\x10\x46\x32\xa4\x01\n\x11\x41uthorizerService\x12?\n\x04Ping\x12\x1a.authorizer.v1.PingRequest\x1a\x1b.authorizer.v1.PingResponse\x12N\n\tAuthorize\x12\x1f.authorizer.v1.AuthorizeRequest\x1a .authorizer.v1.AuthorizeResponseB\xb9\x01\n\x11\x63om.authorizer.v1B\x0f\x41uthorizerProtoP\x01Z>bits.linode.com/LinodeApi/obj-endpoint/gen/proto/authorizer/v1\xa2\x02\x03\x41XX\xaa\x02\rAuthorizer.V1\xca\x02\rAuthorizer\\V1\xe2\x02\x19\x41uthorizer\\V1\\GPBMetadata\xea\x02\x0e\x41uthorizer::V1b\x06proto3')
 
 _AUTHORIZATIONRESULTCODE = DESCRIPTOR.enum_types_by_name['AuthorizationResultCode']
 AuthorizationResultCode = enum_type_wrapper.EnumTypeWrapper(_AUTHORIZATIONRESULTCODE)
@@ -105,11 +105,12 @@ _AUTHORIZATIONCOMMON = DESCRIPTOR.message_types_by_name['AuthorizationCommon']
 _PINGREQUEST = DESCRIPTOR.message_types_by_name['PingRequest']
 _PINGRESPONSE = DESCRIPTOR.message_types_by_name['PingResponse']
 _AUTHORIZATIONRESULT = DESCRIPTOR.message_types_by_name['AuthorizationResult']
-_EXTRADATAREQUIREMENT = DESCRIPTOR.message_types_by_name['ExtraDataRequirement']
+_EXTRADATASPECIFICATION = DESCRIPTOR.message_types_by_name['ExtraDataSpecification']
 _EXTRADATA = DESCRIPTOR.message_types_by_name['ExtraData']
 _EXTRADATA_BUCKETTAGSENTRY = _EXTRADATA.nested_types_by_name['BucketTagsEntry']
 _EXTRADATA_OBJECTKEYTAGSENTRY = _EXTRADATA.nested_types_by_name['ObjectKeyTagsEntry']
 _AUTHORIZEREQUEST = DESCRIPTOR.message_types_by_name['AuthorizeRequest']
+_AUTHORIZEREQUEST_IAMMAPENTRY = _AUTHORIZEREQUEST.nested_types_by_name['IAMMapEntry']
 _AUTHORIZEREQUEST_ENVIRONMENTENTRY = _AUTHORIZEREQUEST.nested_types_by_name['EnvironmentEntry']
 _AUTHORIZERESPONSE = DESCRIPTOR.message_types_by_name['AuthorizeResponse']
 AuthorizationCommon = _reflection.GeneratedProtocolMessageType('AuthorizationCommon', (_message.Message,), {
@@ -140,12 +141,12 @@ AuthorizationResult = _reflection.GeneratedProtocolMessageType('AuthorizationRes
   })
 _sym_db.RegisterMessage(AuthorizationResult)
 
-ExtraDataRequirement = _reflection.GeneratedProtocolMessageType('ExtraDataRequirement', (_message.Message,), {
-  'DESCRIPTOR' : _EXTRADATAREQUIREMENT,
+ExtraDataSpecification = _reflection.GeneratedProtocolMessageType('ExtraDataSpecification', (_message.Message,), {
+  'DESCRIPTOR' : _EXTRADATASPECIFICATION,
   '__module__' : 'authorizer.v1.authorizer_pb2'
-  # @@protoc_insertion_point(class_scope:authorizer.v1.ExtraDataRequirement)
+  # @@protoc_insertion_point(class_scope:authorizer.v1.ExtraDataSpecification)
   })
-_sym_db.RegisterMessage(ExtraDataRequirement)
+_sym_db.RegisterMessage(ExtraDataSpecification)
 
 ExtraData = _reflection.GeneratedProtocolMessageType('ExtraData', (_message.Message,), {
 
@@ -172,6 +173,13 @@ _sym_db.RegisterMessage(ExtraData.ObjectKeyTagsEntry)
 
 AuthorizeRequest = _reflection.GeneratedProtocolMessageType('AuthorizeRequest', (_message.Message,), {
 
+  'IAMMapEntry' : _reflection.GeneratedProtocolMessageType('IAMMapEntry', (_message.Message,), {
+    'DESCRIPTOR' : _AUTHORIZEREQUEST_IAMMAPENTRY,
+    '__module__' : 'authorizer.v1.authorizer_pb2'
+    # @@protoc_insertion_point(class_scope:authorizer.v1.AuthorizeRequest.IAMMapEntry)
+    })
+  ,
+
   'EnvironmentEntry' : _reflection.GeneratedProtocolMessageType('EnvironmentEntry', (_message.Message,), {
     'DESCRIPTOR' : _AUTHORIZEREQUEST_ENVIRONMENTENTRY,
     '__module__' : 'authorizer.v1.authorizer_pb2'
@@ -183,6 +191,7 @@ AuthorizeRequest = _reflection.GeneratedProtocolMessageType('AuthorizeRequest', 
   # @@protoc_insertion_point(class_scope:authorizer.v1.AuthorizeRequest)
   })
 _sym_db.RegisterMessage(AuthorizeRequest)
+_sym_db.RegisterMessage(AuthorizeRequest.IAMMapEntry)
 _sym_db.RegisterMessage(AuthorizeRequest.EnvironmentEntry)
 
 AuthorizeResponse = _reflection.GeneratedProtocolMessageType('AuthorizeResponse', (_message.Message,), {
@@ -203,10 +212,10 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _EXTRADATA_OBJECTKEYTAGSENTRY._serialized_options = b'8\001'
   _AUTHORIZEREQUEST_ENVIRONMENTENTRY._options = None
   _AUTHORIZEREQUEST_ENVIRONMENTENTRY._serialized_options = b'8\001'
-  _AUTHORIZATIONRESULTCODE._serialized_start=1773
-  _AUTHORIZATIONRESULTCODE._serialized_end=1984
-  _S3OPCODE._serialized_start=1987
-  _S3OPCODE._serialized_end=4650
+  _AUTHORIZATIONRESULTCODE._serialized_start=1971
+  _AUTHORIZATIONRESULTCODE._serialized_end=2182
+  _S3OPCODE._serialized_start=2185
+  _S3OPCODE._serialized_end=4848
   _AUTHORIZATIONCOMMON._serialized_start=82
   _AUTHORIZATIONCOMMON._serialized_end=204
   _PINGREQUEST._serialized_start=206
@@ -215,20 +224,22 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _PINGRESPONSE._serialized_end=355
   _AUTHORIZATIONRESULT._serialized_start=358
   _AUTHORIZATIONRESULT._serialized_end=511
-  _EXTRADATAREQUIREMENT._serialized_start=513
-  _EXTRADATAREQUIREMENT._serialized_end=608
-  _EXTRADATA._serialized_start=611
-  _EXTRADATA._serialized_end=911
-  _EXTRADATA_BUCKETTAGSENTRY._serialized_start=784
-  _EXTRADATA_BUCKETTAGSENTRY._serialized_end=845
-  _EXTRADATA_OBJECTKEYTAGSENTRY._serialized_start=847
-  _EXTRADATA_OBJECTKEYTAGSENTRY._serialized_end=911
-  _AUTHORIZEREQUEST._serialized_start=914
-  _AUTHORIZEREQUEST._serialized_end=1514
-  _AUTHORIZEREQUEST_ENVIRONMENTENTRY._serialized_start=1415
-  _AUTHORIZEREQUEST_ENVIRONMENTENTRY._serialized_end=1477
-  _AUTHORIZERESPONSE._serialized_start=1517
-  _AUTHORIZERESPONSE._serialized_end=1770
-  _AUTHORIZERSERVICE._serialized_start=4653
-  _AUTHORIZERSERVICE._serialized_end=4817
+  _EXTRADATASPECIFICATION._serialized_start=513
+  _EXTRADATASPECIFICATION._serialized_end=610
+  _EXTRADATA._serialized_start=613
+  _EXTRADATA._serialized_end=913
+  _EXTRADATA_BUCKETTAGSENTRY._serialized_start=786
+  _EXTRADATA_BUCKETTAGSENTRY._serialized_end=847
+  _EXTRADATA_OBJECTKEYTAGSENTRY._serialized_start=849
+  _EXTRADATA_OBJECTKEYTAGSENTRY._serialized_end=913
+  _AUTHORIZEREQUEST._serialized_start=916
+  _AUTHORIZEREQUEST._serialized_end=1710
+  _AUTHORIZEREQUEST_IAMMAPENTRY._serialized_start=1509
+  _AUTHORIZEREQUEST_IAMMAPENTRY._serialized_end=1540
+  _AUTHORIZEREQUEST_ENVIRONMENTENTRY._serialized_start=1542
+  _AUTHORIZEREQUEST_ENVIRONMENTENTRY._serialized_end=1649
+  _AUTHORIZERESPONSE._serialized_start=1713
+  _AUTHORIZERESPONSE._serialized_end=1968
+  _AUTHORIZERSERVICE._serialized_start=4851
+  _AUTHORIZERSERVICE._serialized_end=5015
 # @@protoc_insertion_point(module_scope)

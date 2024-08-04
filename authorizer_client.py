@@ -22,16 +22,8 @@ from authorizer_common import (
     opcode_to_enum,
     fmt_authorize_request,
     fmt_authorize_response,
+    fmt_common,
 )
-
-
-def dump_common(desc, common):
-    """
-    Dump the common fields to the log.
-    """
-    tsiso = common.timestamp.ToDatetime().isoformat()
-    logging.debug(f"{desc} ts=({tsiso}), id={common.authorization_id}")
-
 
 def ping(stub, args):
     """
@@ -42,9 +34,9 @@ def ping(stub, args):
         req.common.timestamp.GetCurrentTime()
         req.common.authorization_id = args.id
         logging.debug(f"Sending Ping(id={args.id})")
-        dump_common("Request", req.common)
+        logging.debug(f"Request: {fmt_common(req.common)}")
         response = stub.Ping(req)
-        dump_common("Response", response.common)
+        logging.debug(f"Response: {fmt_common(response.common)}")
         return response.common.authorization_id.encode() == args.id
 
     except grpc.RpcError as e:
@@ -83,7 +75,7 @@ def pack_authorize_request(req, args):
     # XXX extra data
     for env in args.environment:
         key, value = env.split("=", 1)
-        req.environment[key] = value
+        req.environment[key].key.append(value)
 
 
 def authorize(stub, args):
@@ -164,7 +156,7 @@ def _load_credential_from_file(filepath):
 def main(argv):
     p = argparse.ArgumentParser(description="AuthService client")
     p.add_argument("command", help="command to run", choices=["ping", "authorize"])
-    # XXX command arguments
+
     p.add_argument("--id", help="authorization_id field override (default is random)")
     p.add_argument("-b", "--bucket", help="bucket to authorize", default="")
     p.add_argument("-k", "--object-key", help="object key to authorize", default="")
@@ -183,6 +175,7 @@ def main(argv):
         "--assuming-user-arn", help="assuming user ARN to authorize", default=None
     )
     p.add_argument("--account-arn", help="account ARN to authorize", default="")
+
     # XXX extra data
 
     p.add_argument(
