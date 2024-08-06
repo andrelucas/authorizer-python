@@ -26,6 +26,7 @@ from authorizer_common import (
     fmt_common,
 )
 
+
 def ping(stub, args):
     """
     Ping the server.
@@ -73,7 +74,23 @@ def pack_authorize_request(req, args):
     if args.assuming_user_arn is not None:
         req.assuming_user_arn = args.assuming_user_arn
     req.account_arn = args.account_arn
-    # XXX extra data
+
+    if args.bucket_tag or args.object_tag:
+        # At least one extra data item is set.
+        if args.bucket_tag:
+            req.extra_data_provided.bucket_tags = True
+            for tag in args.bucket_tag:
+                key, value = tag.split("=", 1)
+                iamkey = "s3:ExistingBucketTag/" + key
+                req.environment[iamkey].key.append(value)
+
+        if args.object_tag:
+            req.extra_data_provided.object_key_tags = True
+            for tag in args.object_tag:
+                key, value = tag.split("=", 1)
+                iamkey = "s3:ResourceTag/" + key
+                req.environment[iamkey].key.append(value)
+
     for env in args.environment:
         key, value = env.split("=", 1)
         req.environment[key].key.append(value)
@@ -163,7 +180,8 @@ def main(argv):
     )
     p.add_argument("--account-arn", help="account ARN to authorize", default="")
 
-    # XXX extra data
+    p.add_argument("--bucket-tag", help="set a bucket tag (k=v)", action="append")
+    p.add_argument("--object-tag", help="set an object tag (k=v)", action="append")
 
     p.add_argument(
         "-t", "--tls", help="connect to the server using TLS", action="store_true"
