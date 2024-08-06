@@ -10,6 +10,7 @@ import argparse
 import base64
 from concurrent import futures
 from google.protobuf import any_pb2
+from google.protobuf.json_format import MessageToJson
 from google.rpc import code_pb2
 from google.rpc import error_details_pb2
 from google.rpc import status_pb2
@@ -52,6 +53,45 @@ class AuthzRequest:
           object_key_name={self.object_key_name})"""
 
 
+class ExtraDataRequiredException(Exception):
+    def __init__(self, bucket_tags: bool, object_key_tags: bool):
+        self.bucket_tags = bucket_tags
+        self.object_key_tags = object_key_tags
+
+    def __str__(self) -> str:
+        return f"ExtraDataRequiredException(bucket_tags={self.bucket_tags}, object_key_tags={self.object_key_tags})"
+
+
+def authz_extra_data_required_status(bucket_tags: bool, object_key_tags: bool):
+    """
+    Return a google.rpc.status_pb2.Status object indicating that extra data is
+    required.
+    """
+    detail = any_pb2.Any()
+    edr = authorizer_pb2.ExtraDataSpecification(
+        bucket_tags=bucket_tags, object_key_tags=object_key_tags
+    )
+    detail.Pack(
+        authorizer_pb2.AuthorizationErrorDetails(
+            code=authorizer_pb2.AuthorizationResultCode.AUTHZ_RESULT_EXTRA_DATA_REQUIRED,
+            extra_data_required=edr,
+        )
+    )
+    return status_pb2.Status(
+        code=code_pb2.INTERNAL, message="Extra data required", details=[detail]
+    )
+
+
+def authz_internal_error_status(e: Exception):
+    """
+    Return a google.rpc.status_pb2.Status object for the given exception.
+    """
+    status = status_pb2.Status()
+    status.code = code_pb2.INTERNAL
+    status.message = str(e)
+    return status
+
+
 class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
 
     # Note: Authorize() (the original service) not implemented here.
@@ -64,8 +104,8 @@ class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
         logging.debug(f"Ping response: {fmt_common(response.common)}")
         return response
 
-    def AuthorizeV2(self, request: authorizer_pb2.AuthorizeV2Request, context):
-        logging.debug(fmt_authorize_request(request))
+    def AuthorizeV2(self, request, context):
+        logging.debug(f"Request: {fmt_authorize_request(request)}")
 
         try:
             response = authorizer_pb2.AuthorizeV2Response()
@@ -75,22 +115,26 @@ class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
             try:
                 authreq = AuthzRequest(request)
 
-                # XXX actually authorize...
-                response.result.code = (
-                    authorizer_pb2.AuthorizationResultCode.AUTHZ_RESULT_ALLOW
-                )
-
             except Exception as e:
-                logging.error(f"Failed to parse request: {e}")
+                logging.error(f"Failed to parse request into AuthzRequest: {e}")
                 context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Invalid request")
 
-            logging.debug(fmt_authorize_response(response))
-
+            # XXX actually authorize...
+            # logging.debug("Raising fake ExtraDataRequiredException")
+            # raise ExtraDataRequiredException(True, True)
+            logging.debug(f"Response: {fmt_authorize_response(response)}")
             return response
 
+        except ExtraDataRequiredException as e:
+            context.abort_with_status(
+                rpc_status.to_status(authz_extra_data_required_status(e.bucket_tags, e.object_key_tags))
+            )
+
         except Exception as e:
-            logging.error(f"Failed to parse request: {e}")
-            context.abort(grpc.StatusCode.INTERNAL, "Internal error")
+            logging.error(f"Failed to handle request: {e}")
+            context.abort_with_status(
+                rpc_status.to_status(authz_internal_error_status(e))
+            )
 
 
 def _load_credential_from_file(filepath):

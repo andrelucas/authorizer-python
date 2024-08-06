@@ -8,6 +8,7 @@ import base64
 from google.rpc import code_pb2
 from google.rpc import error_details_pb2
 from google.rpc import status_pb2
+from google.protobuf.json_format import MessageToJson
 from google.protobuf.timestamp_pb2 import Timestamp
 import grpc
 from grpc_status import rpc_status
@@ -93,24 +94,8 @@ def authorize_v2(stub, args):
                 f"Authorization ID mismatch: {response.common.authorization_id} != {args.id}"
             )
             return False
-        result = response.result
-        code = result.code
-        rtype = authorizer_pb2.AuthorizationResultCode
-        if code == rtype.AUTHZ_RESULT_UNSPECIFIED:
-            logging.error("Authorization result is not specified")
-            return False
-        elif code == rtype.AUTHZ_RESULT_ALLOW:
-            logging.info("Authorization allowed")
-            return True
-        elif code == rtype.AUTHZ_RESULT_DENY:
-            logging.info("Authorization denied")
-            return False
-        elif code == rtype.AUTHZ_RESULT_EXTRA_DATA_REQUIRED:
-            logging.info("Authorization requires extra data")
-            return False
-        else:
-            rname = authorizer_pb2.AuthorizationResultCode.Name(code)
-            logging.error(f"Unknown authorization result: {rname}")
+        logging.debug("Authorization successful")
+        return True
 
     except grpc.RpcError as e:
         # Unpack the error.
@@ -119,14 +104,16 @@ def authorize_v2(stub, args):
             logging.error(f"RPC failed: {e}")
         else:
             logging.error(
-                f"RPC failed: error={e} code={status.code} message='{status.details}'"
+                f"RPC failed: error={e} code={status.code} message='{status.message}'"
             )
             for detail in status.details:
                 # Unpack the ANY if it's a specific type.
-                if detail.Is(error_details_pb2.DebugInfo.DESCRIPTOR):
-                    debug_info = error_details_pb2.DebugInfo()
-                    detail.Unpack(debug_info)
-                    logging.error(f"DebugInfo: {debug_info}")
+                if detail.Is(authorizer_pb2.AuthorizationErrorDetails.DESCRIPTOR):
+                    error_details = authorizer_pb2.AuthorizationErrorDetails()
+                    detail.Unpack(error_details)
+                    logging.error(
+                        f"AuthorizationErrorDetails: code={error_details.code} edr={MessageToJson(error_details.extra_data_required, indent=None)}"
+                    )
 
         return False
 
