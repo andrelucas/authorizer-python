@@ -45,12 +45,11 @@ def evaluate_policy(policy, request, bucket=None, object_key=None) -> bool:
     True means 'allow', False means 'deny'.
     """
     logging.debug(
-        f"Evaluate: '{policy}', request: {fmt_authorize_request(request)}, "
+        f"Evaluate: '{policy}' "
         f"bucket: {bucket}, object_key: {object_key}"
     )
 
     p = json.loads(policy)
-    logging.debug(f"Policy: {p}")
 
     if p["action"] == "deny":
         logging.error("Explicit deny")
@@ -154,6 +153,10 @@ class Store:
         object_key = None
         object_key_name = None
 
+        response = authorizer_pb2.AuthorizeV2Response()
+        response.common.timestamp.GetCurrentTime()
+        response.common.authorization_id = request.common.authorization_id
+
         # Not all requests have a bucket name.
         if request.bucket_name != "":
             bucket_name = request.bucket_name
@@ -176,9 +179,9 @@ class Store:
                     )
 
         if bucket is None and object_key is None:
-            # XXX there are requests with neither of these, this is wrong.
-            logging.debug("No bucket or object key")
-            raise AccessDeniedException("No bucket or object key")
+            # XXX just allow it for now.
+            logging.debug("No bucket or object key, allowing")
+            return response
 
         if bucket is not None:
             policy = bucket.policy
@@ -191,9 +194,6 @@ class Store:
                 )
 
         if allow:
-            response = authorizer_pb2.AuthorizeV2Response()
-            response.common.timestamp.GetCurrentTime()
-            response.common.authorization_id = request.common.authorization_id
             return response
         else:
             raise AccessDeniedException("Access denied")
@@ -332,9 +332,16 @@ class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
         load_store(self.store)
         super().__init__()
 
+
+    def Header(self, request):
+        logging.info("-------------");
+        logging.info(f"New request: id={request.common.authorization_id}")
+        
+
     # Note: Authorize() (the original service) not implemented here.
 
     def Ping(self, request, context):
+        self.Header(request)
         logging.debug(f"Ping request: {fmt_common(request.common)}")
         response = authorizer_pb2.PingResponse()
         response.common.timestamp.GetCurrentTime()
@@ -343,6 +350,7 @@ class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
         return response
 
     def AuthorizeV2(self, request, context):
+        self.Header(request)
         logging.debug(f"Request: {fmt_authorize_request(request)}")
 
         try:
