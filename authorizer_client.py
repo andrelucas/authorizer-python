@@ -115,15 +115,16 @@ def authorize_v2(stub, args):
             logging.error(f"RPC failed: {e}")
         else:
             logging.error(
-                f"RPC failed: error={e} code={status.code} message='{status.message}'"
+                f"RPC failed: code={status.code} message='{status.message}'"
             )
             for detail in status.details:
                 # Unpack the ANY if it's a specific type.
                 if detail.Is(authorizer_pb2.AuthorizationErrorDetails.DESCRIPTOR):
                     error_details = authorizer_pb2.AuthorizationErrorDetails()
                     detail.Unpack(error_details)
+                    codestr = authorizer_pb2.AuthorizationResultCode.DESCRIPTOR.values_by_number[error_details.code].name
                     logging.error(
-                        f"AuthorizationErrorDetails: code={error_details.code} edr={MessageToJson(error_details.extra_data_required, indent=None)}"
+                        f"AuthorizationErrorDetails: code={codestr} edr={MessageToJson(error_details.extra_data_required, indent=None)}"
                     )
 
         return False
