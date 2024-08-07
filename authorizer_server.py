@@ -58,7 +58,6 @@ def evaluate_policy(policy, request, bucket=None, object_key=None) -> bool:
     if p["action"] == "allow":
         if "require" in p:
             has_edp = request.HasField("extra_data_provided")
-            require_bucket_tags = False
             require_object_key_tags = False
             req_fail = False
             edp = None
@@ -66,12 +65,6 @@ def evaluate_policy(policy, request, bucket=None, object_key=None) -> bool:
             if has_edp:
                 edp = request.extra_data_provided
                 logging.debug(f"Has extra data provided: {edp}")
-
-            if "bucketTags" in p["require"]:
-                require_bucket_tags = True
-                if not has_edp or not edp.bucket_tags:
-                    logging.error("Bucket tags required but not present")
-                    req_fail = True
 
             if "objectTags" in p["require"]:
                 require_object_key_tags = True
@@ -81,7 +74,7 @@ def evaluate_policy(policy, request, bucket=None, object_key=None) -> bool:
 
             if req_fail:
                 raise ExtraDataRequiredException(
-                    require_bucket_tags, require_object_key_tags
+                    require_object_key_tags
                 )
 
         logging.info("Explicit allow")
@@ -209,24 +202,9 @@ def load_store(store):
         "action": "deny",
     }
 
-    allow_with_bucket_tags = {
-        "action": "allow",
-        "require": [
-            "bucketTags",
-        ],
-    }
-
     allow_with_object_tags = {
         "action": "allow",
         "require": [
-            "objectTags",
-        ],
-    }
-
-    allow_with_bucket_and_object_tags = {
-        "action": "allow",
-        "require": [
-            "bucketTags",
             "objectTags",
         ],
     }
@@ -239,28 +217,19 @@ def load_store(store):
     store.add_bucket(bucket2)
     bucket2.add_object(ObjectKey("objectkey1", "value1", {}))
 
-    bucket3 = Bucket("bucket3", {}, json.dumps(allow_with_bucket_and_object_tags))
+    bucket3 = Bucket("bucket3", {}, json.dumps(allow_with_object_tags))
     store.add_bucket(bucket3)
     bucket3.add_object(ObjectKey("objectkey1", "value1", {}))
-
-    bucket4 = Bucket("bucket4", {}, json.dumps(allow_with_bucket_tags))
-    store.add_bucket(bucket4)
-    bucket4.add_object(ObjectKey("objectkey1", "value1", {}))
-
-    bucket5 = Bucket("bucket5", {}, json.dumps(allow_with_object_tags))
-    store.add_bucket(bucket5)
-    bucket5.add_object(ObjectKey("objectkey1", "value1", {}))
 
     logging.debug(f"Store: {store}")
 
 
 class ExtraDataRequiredException(Exception):
-    def __init__(self, bucket_tags: bool, object_key_tags: bool):
-        self.bucket_tags = bucket_tags
+    def __init__(self, object_key_tags: bool):
         self.object_key_tags = object_key_tags
 
     def __str__(self) -> str:
-        return f"ExtraDataRequiredException(bucket_tags={self.bucket_tags}, object_key_tags={self.object_key_tags})"
+        return f"ExtraDataRequiredException(object_key_tags={self.object_key_tags})"
 
 
 class AccessDeniedException(Exception):
@@ -271,14 +240,14 @@ class AccessDeniedException(Exception):
         return f"AccessDeniedException(message={self.message})"
 
 
-def authz_extra_data_required_status(bucket_tags: bool, object_key_tags: bool):
+def authz_extra_data_required_status(object_key_tags: bool):
     """
     Return a google.rpc.status_pb2.Status object indicating that extra data is
     required.
     """
     detail = any_pb2.Any()
     edr = authorizer_pb2.ExtraDataSpecification(
-        bucket_tags=bucket_tags, object_key_tags=object_key_tags
+        object_key_tags=object_key_tags
     )
     detail.Pack(
         authorizer_pb2.AuthorizationErrorDetails(
@@ -365,7 +334,7 @@ class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
         except ExtraDataRequiredException as e:
             context.abort_with_status(
                 rpc_status.to_status(
-                    authz_extra_data_required_status(e.bucket_tags, e.object_key_tags)
+                    authz_extra_data_required_status(e.object_key_tags)
                 )
             )
 

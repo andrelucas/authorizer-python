@@ -75,21 +75,15 @@ def pack_authorize_request(req, args):
         req.assuming_user_arn = args.assuming_user_arn
     req.account_arn = args.account_arn
 
-    if args.bucket_tag or args.object_tag:
+    if args.object_tag:  # Allow for more than one extra data item in the future.
         # At least one extra data item is set.
-        if args.bucket_tag:
-            req.extra_data_provided.bucket_tags = True
-            for tag in args.bucket_tag:
-                key, value = tag.split("=", 1)
-                iamkey = "s3:ExistingBucketTag/" + key
-                req.environment[iamkey].key.append(value)
-
         if args.object_tag:
             req.extra_data_provided.object_key_tags = True
             for tag in args.object_tag:
                 key, value = tag.split("=", 1)
-                iamkey = "s3:ResourceTag/" + key
-                req.environment[iamkey].key.append(value)
+                # iamkey = "s3:ResourceTag/" + key
+                # req.environment[iamkey].key.append(value)
+                req.extra_data.object_key_tags[key] = value
 
     for env in args.environment:
         key, value = env.split("=", 1)
@@ -180,7 +174,6 @@ def main(argv):
     )
     p.add_argument("--account-arn", help="account ARN to authorize", default="")
 
-    p.add_argument("--bucket-tag", help="set a bucket tag (k=v)", action="append")
     p.add_argument("--object-tag", help="set an object tag (k=v)", action="append")
 
     p.add_argument(
