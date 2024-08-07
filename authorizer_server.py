@@ -25,8 +25,7 @@ import json
 from authorizer.v1 import authorizer_pb2_grpc
 from authorizer.v1 import authorizer_pb2
 
-from authorizer_common import fmt_authorize_request, fmt_authorize_response, fmt_common
-
+from authorizer_common import *
 
 class PolicyEvaluationFailedException(Exception):
     def __init__(self, message: str):
@@ -64,7 +63,7 @@ def evaluate_policy(policy, request, bucket=None, object_key=None) -> bool:
 
             if has_edp:
                 edp = request.extra_data_provided
-                logging.debug(f"Has extra data provided: {edp}")
+                logging.debug(f"Has extra data provided: {fmt_extra_data_specification(edp)}")
 
             if "objectTags" in p["require"]:
                 require_object_key_tags = True

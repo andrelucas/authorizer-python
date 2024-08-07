@@ -91,3 +91,7 @@ def fmt_authorize_request(req: authorizer_pb2.AuthorizeV2Request):
 
 def fmt_authorize_response(response: authorizer_pb2.AuthorizeV2Response) -> str:
     return MessageToJson(response, indent=None)
+
+
+def fmt_extra_data_specification(edr: authorizer_pb2.ExtraDataSpecification) -> str:
+    return MessageToJson(edr, indent=None)
