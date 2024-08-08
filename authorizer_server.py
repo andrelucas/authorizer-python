@@ -66,10 +66,13 @@ def evaluate_policy(policy, request, bucket=None, object_key=None) -> bool:
                 logging.debug(f"Has extra data provided: {fmt_extra_data_specification(edp)}")
 
             if "objectTags" in p["require"]:
-                require_object_key_tags = True
-                if not has_edp or not edp.object_key_tags:
-                    logging.error("Object key tags required but not present")
-                    req_fail = True
+                if request.object_key_name == "":
+                    logging.info("Not insisting on object key tags for request with no object key")
+                else:
+                    require_object_key_tags = True
+                    if not has_edp or not edp.object_key_tags:
+                        logging.error("Object key tags required but not present")
+                        req_fail = True
 
             if req_fail:
                 raise ExtraDataRequiredException(
@@ -157,18 +160,22 @@ class Store:
                 logging.error(f"Bucket '{request.bucket_name}' not found")
                 raise AccessDeniedException(f"Bucket '{request.bucket_name}' not found")
 
-            # Not all requests that have a bucket have an object key.
+            # Not all requests that have a bucket have an object key. If the
+            # key doesn't exist, just create it (for now).
             if request.object_key_name != "":
                 object_key_name = request.object_key_name
+                if not object_key_name in bucket.objects:
+                    logging.debug(f"Creating object key '{object_key_name}' in bucket '{bucket_name}'")
+                    bucket.add_object(ObjectKey(object_key_name, "value1", {}))
                 object_key = bucket.get_object(object_key_name)
-                if object_key is None:
-                    logging.error(
-                        f"Object key '{object_key_name}' not found in bucket '{bucket_name}'"
-                    )
-                    raise AccessDeniedException(
-                        f"Object key '{request.object_key_name}' not found in "
-                        f"bucket '{request.bucket_name}'"
-                    )
+                # if object_key is None:
+                #     logging.error(
+                #         f"Object key '{object_key_name}' not found in bucket '{bucket_name}'"
+                #     )
+                #     raise AccessDeniedException(
+                #         f"Object key '{request.object_key_name}' not found in "
+                #         f"bucket '{request.bucket_name}'"
+                #     )
 
         if bucket is None and object_key is None:
             # XXX just allow it for now.
@@ -207,18 +214,34 @@ def load_store(store):
             "objectTags",
         ],
     }
+    policies = [always_allow, allow_with_object_tags, always_deny]
 
-    bucket1 = Bucket("bucket1", {}, json.dumps(always_allow))
-    store.add_bucket(bucket1)
-    bucket1.add_object(ObjectKey("objectkey1", "value1", {}))
+    for n, p in enumerate(policies, start=1):
+        bname=f"bucket{n}"
+        logging.debug(f"Bucket {bname} policy: {p}")
+        logging.debug(f"Bucket {bname} regular")
+        b = Bucket(bname, {}, json.dumps(p))
+        store.add_bucket(b)
+        b.add_object(ObjectKey("objectkey1", "value1", {}))
+        
+        bname=f"bucket{n}v"
+        logging.debug(f"Bucket {bname} versioned")
+        bv = Bucket(bname, {}, json.dumps(p))
+        store.add_bucket(bv)
+        bv.add_object(ObjectKey("objectkey1", "value1", {}))
+        
+        bname=f"bucket{n}l"
+        logging.debug(f"Bucket {bname} object lock")
+        bl = Bucket(bname, {}, json.dumps(p))
+        store.add_bucket(bl)
+        bl.add_object(ObjectKey("objectkey1", "value1", {}))
+        
+        bname=f"bucket{n}vl"
+        logging.debug(f"Bucket {bname} versioned and object lock")
+        bvl = Bucket(bname, {}, json.dumps(p))
+        store.add_bucket(bvl)
+        bvl.add_object(ObjectKey("objectkey1", "value1", {}))
 
-    bucket2 = Bucket("bucket2", {}, json.dumps(always_deny))
-    store.add_bucket(bucket2)
-    bucket2.add_object(ObjectKey("objectkey1", "value1", {}))
-
-    bucket3 = Bucket("bucket3", {}, json.dumps(allow_with_object_tags))
-    store.add_bucket(bucket3)
-    bucket3.add_object(ObjectKey("objectkey1", "value1", {}))
 
     logging.debug(f"Store: {store}")
 
