@@ -5,6 +5,7 @@ Simple test client for the Authorizer gRPC service.
 
 import argparse
 import base64
+import coloredlogs
 from google.rpc import code_pb2
 from google.rpc import error_details_pb2
 from google.rpc import status_pb2
@@ -32,12 +33,12 @@ def ping(stub, args):
     Ping the server.
     """
     try:
-        req = authorizer_pb2.PingRequest()
-        req.common.timestamp.GetCurrentTime()
-        req.common.authorization_id = args.id
+        question = authorizer_pb2.PingRequest()
+        question.common.timestamp.GetCurrentTime()
+        question.common.authorization_id = args.id
         logging.debug(f"Sending Ping(id={args.id})")
-        logging.debug(f"Request: {fmt_common(req.common)}")
-        response = stub.Ping(req)
+        logging.debug(f"Request: {fmt_common(question.common)}")
+        response = stub.Ping(question)
         logging.debug(f"Response: {fmt_common(response.common)}")
         return response.common.authorization_id.encode() == args.id
 
@@ -64,30 +65,34 @@ def pack_authorize_request(req, args):
     """
     Pack the AuthorizeRequest with the args.
     """
-    req.common.timestamp.GetCurrentTime()
-    req.common.authorization_id = args.id
-    req.bucket_name = args.bucket
-    req.object_key_name = args.object_key
-    req.opcode = args.opcode_enum
-    req.canonical_user_id = args.canonical_user_id
-    req.user_arn = args.user_arn
-    if args.assuming_user_arn is not None:
-        req.assuming_user_arn = args.assuming_user_arn
-    req.account_arn = args.account_arn
+    for op in args.opcode:
+        question = req.questions.add()
+        question.common.timestamp.GetCurrentTime()
+        question.common.authorization_id = args.id
+        question.bucket_name = args.bucket
+        question.object_key_name = args.object_key
+        question.opcode = opcode_to_enum[op]  # We've already checked this is valid.
+        question.canonical_user_id = args.canonical_user_id
+        question.user_arn = args.user_arn
+        if args.assuming_user_arn is not None:
+            question.assuming_user_arn = args.assuming_user_arn
+        question.account_arn = args.account_arn
 
-    if args.object_tag:  # Allow for more than one extra data item in the future.
-        # At least one extra data item is set.
-        if args.object_tag:
-            req.extra_data_provided.object_key_tags = True
-            for tag in args.object_tag:
-                key, value = tag.split("=", 1)
-                # iamkey = "s3:ResourceTag/" + key
-                # req.environment[iamkey].key.append(value)
-                req.extra_data.object_key_tags[key] = value
+        if args.object_tag:  # Allow for more than one extra data item in the future.
+            # At least one extra data item is set.
+            if args.object_tag:
+                question.extra_data_provided.object_key_tags = True
+                for tag in args.object_tag:
+                    key, value = tag.split("=", 1)
+                    # iamkey = "s3:ResourceTag/" + key
+                    # question.environment[iamkey].key.append(value)
+                    question.extra_data.object_key_tags[key] = value
 
-    for env in args.environment:
-        key, value = env.split("=", 1)
-        req.environment[key].key.append(value)
+        for env in args.environment:
+            key, value = env.split("=", 1)
+            question.environment[key].key.append(value)
+
+    return req
 
 
 def authorize_v2(stub, args):
@@ -100,13 +105,35 @@ def authorize_v2(stub, args):
         logging.debug(fmt_authorize_request(req))
         response = stub.AuthorizeV2(req)
         logging.debug(fmt_authorize_response(response))
-        if response.common.authorization_id.encode() != args.id:
-            logging.error(
-                f"Authorization ID mismatch: {response.common.authorization_id} != {args.id}"
-            )
+        # if response.common.authorization_id.encode() != args.id:
+        #     logging.error(
+        #         f"Authorization ID mismatch: {response.common.authorization_id} != {args.id}"
+        #     )
+        #     return False
+
+        success = True
+        extra_data_required = False
+
+        for n, answer in enumerate(response.answers, start=1):
+            codestr = authorizer_pb2.AuthorizationResultCode.DESCRIPTOR.values_by_number[answer.code].name
+            logging.debug(f"Answer {n}: {codestr}: {fmt_common(answer.common)}")
+
+            if answer.code != authorizer_pb2.AUTHZ_RESULT_ALLOW:
+                success = False
+            if answer.code == authorizer_pb2.AUTHZ_RESULT_EXTRA_DATA_REQUIRED:
+                extra_data_required = True
+            # if answer.answer.result_code != authorizer_pb2.AuthorizationResultCode.AUTHZ_OK:
+            #     logging.error(
+            #         f"Authorization failed: {authorizer_pb2.AuthorizationResultCode.DESCRIPTOR.values_by_number[answer.answer.result_code].name}"
+            #     )
+            #     return False
+
+        if success:
+            logging.debug("Authorization successful")
+            return True
+        else:
+            logging.error("Authorization failed")
             return False
-        logging.debug("Authorization successful")
-        return True
 
     except grpc.RpcError as e:
         # Unpack the error.
@@ -114,18 +141,16 @@ def authorize_v2(stub, args):
         if status is None:
             logging.error(f"RPC failed: {e}")
         else:
-            logging.error(
-                f"RPC failed: code={status.code} message='{status.message}'"
-            )
-            for detail in status.details:
-                # Unpack the ANY if it's a specific type.
-                if detail.Is(authorizer_pb2.AuthorizationErrorDetails.DESCRIPTOR):
-                    error_details = authorizer_pb2.AuthorizationErrorDetails()
-                    detail.Unpack(error_details)
-                    codestr = authorizer_pb2.AuthorizationResultCode.DESCRIPTOR.values_by_number[error_details.code].name
-                    logging.error(
-                        f"AuthorizationErrorDetails: code={codestr} edr={MessageToJson(error_details.extra_data_required, indent=None)}"
-                    )
+            logging.error(f"RPC failed: code={status.code} message='{status.message}'")
+            # for detail in status.details:
+            #     # Unpack the ANY if it's a specific type.
+            #     if detail.Is(authorizer_pb2.AuthorizationErrorDetails.DESCRIPTOR):
+            #         error_details = authorizer_pb2.AuthorizationErrorDetails()
+            #         detail.Unpack(error_details)
+            #         codestr = authorizer_pb2.AuthorizationResultCode.DESCRIPTOR.values_by_number[error_details.code].name
+            #         logging.error(
+            #             f"AuthorizationErrorDetails: code={codestr} edr={MessageToJson(error_details.extra_data_required, indent=None)}"
+            #         )
 
         return False
 
@@ -159,7 +184,7 @@ def main(argv):
     p.add_argument("--id", help="authorization_id field override (default is random)")
     p.add_argument("-b", "--bucket", help="bucket to authorize", default="")
     p.add_argument("-k", "--object-key", help="object key to authorize", default="")
-    p.add_argument("-o", "--opcode", help="opcode/action to authorize")
+    p.add_argument("-o", "--opcode", help="opcode/action to authorize", action="append")
     p.add_argument(
         "-e",
         "--environment",
@@ -195,9 +220,9 @@ def main(argv):
         sys.exit(1)
 
     if args.verbose:
-        logging.basicConfig(level=logging.DEBUG)
+        coloredlogs.install(level=logging.DEBUG)
     else:
-        logging.basicConfig(level=logging.INFO)
+        coloredlogs.install(level=logging.INFO)
 
     if args.tls:
         if not args.ca_cert:
@@ -220,10 +245,11 @@ def main(argv):
         if not args.opcode:
             logging.error("Authorize requires an opcode")
             sys.exit(2)
-        if not args.opcode in opcode_to_enum:
-            logging.error(f"Unknown opcode '{args.opcode}'")
-            sys.exit(2)
-        args.opcode_enum = opcode_to_enum[args.opcode]
+        for op in args.opcode:
+            if not op in opcode_to_enum:
+                logging.error(f"Unknown opcode '{op}'")
+                sys.exit(2)
+        # args.opcode_enum = opcode_to_enum[args.opcode]
 
     if args.tls:
         root_crt = _load_credential_from_file(args.ca_cert)

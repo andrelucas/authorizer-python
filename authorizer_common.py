@@ -84,6 +84,12 @@ opcode_to_enum = {
 def fmt_common(common):
     return MessageToJson(common, indent=None)
 
+def fmt_question(question):
+    return MessageToJson(question, indent=None)
+
+def fmt_answer(answer):
+    return MessageToJson(answer, indent=None)
+
 
 def fmt_authorize_request(req: authorizer_pb2.AuthorizeV2Request):
     return MessageToJson(req, indent=None)

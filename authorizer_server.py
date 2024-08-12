@@ -8,6 +8,7 @@ Usage::
 
 import argparse
 import base64
+import coloredlogs
 from concurrent import futures
 from google.protobuf import any_pb2
 from google.protobuf.json_format import MessageToJson
@@ -27,12 +28,21 @@ from authorizer.v1 import authorizer_pb2
 
 from authorizer_common import *
 
+
 class PolicyEvaluationFailedException(Exception):
     def __init__(self, message: str):
         self.message = message
 
     def __str__(self) -> str:
         return f"PolicyEvaluationFailedException(message={self.message})"
+
+
+class ExtraDataRequiredException(Exception):
+    def __init__(self, object_key_tags: bool):
+        self.object_key_tags = object_key_tags
+
+    def __str__(self) -> str:
+        return f"ExtraDataRequiredException(object_key_tags={self.object_key_tags})"
 
 
 def evaluate_policy(policy, request, bucket=None, object_key=None) -> bool:
@@ -44,8 +54,7 @@ def evaluate_policy(policy, request, bucket=None, object_key=None) -> bool:
     True means 'allow', False means 'deny'.
     """
     logging.debug(
-        f"Evaluate: '{policy}' "
-        f"bucket: {bucket}, object_key: {object_key}"
+        f"Evaluate: '{policy}' " f"bucket: {bucket}, object_key: {object_key}"
     )
 
     p = json.loads(policy)
@@ -63,21 +72,23 @@ def evaluate_policy(policy, request, bucket=None, object_key=None) -> bool:
 
             if has_edp:
                 edp = request.extra_data_provided
-                logging.debug(f"Has extra data provided: {fmt_extra_data_specification(edp)}")
+                logging.debug(
+                    f"Has extra data provided: {fmt_extra_data_specification(edp)}"
+                )
 
             if "objectTags" in p["require"]:
                 if request.object_key_name == "":
-                    logging.info("Not insisting on object key tags for request with no object key")
+                    logging.info(
+                        "Not insisting on object key tags for request with no object key"
+                    )
                 else:
                     require_object_key_tags = True
                     if not has_edp or not edp.object_key_tags:
-                        logging.error("Object key tags required but not present")
+                        logging.warn("Object key tags required but not present")
                         req_fail = True
 
             if req_fail:
-                raise ExtraDataRequiredException(
-                    require_object_key_tags
-                )
+                raise ExtraDataRequiredException(require_object_key_tags)
 
         logging.info("Explicit allow")
         return True
@@ -137,9 +148,9 @@ class Store:
     def __str__(self) -> str:
         return f"Store(buckets={self.buckets})"
 
-    def authorize(self, request):
+    def authorize(self, question):
         """
-        Authorize the request against this store.
+        Authorize the question against this store. Return the answer message.
         """
         allow = False
 
@@ -148,24 +159,26 @@ class Store:
         object_key = None
         object_key_name = None
 
-        response = authorizer_pb2.AuthorizeV2Response()
-        response.common.timestamp.GetCurrentTime()
-        response.common.authorization_id = request.common.authorization_id
+        answer = authorizer_pb2.AuthorizeV2Answer()
+        answer.common.timestamp.GetCurrentTime()
+        answer.common.authorization_id = question.common.authorization_id
 
         # Not all requests have a bucket name.
-        if request.bucket_name != "":
-            bucket_name = request.bucket_name
-            bucket = self.get_bucket(request.bucket_name)
+        if question.bucket_name != "":
+            bucket_name = question.bucket_name
+            bucket = self.get_bucket(question.bucket_name)
             if bucket is None:
-                logging.error(f"Bucket '{request.bucket_name}' not found")
-                raise AccessDeniedException(f"Bucket '{request.bucket_name}' not found")
+                logging.error(f"Bucket '{question.bucket_name}' not found")
+                answer.code = authorizer_pb2.AuthorizationResultCode.AUTHZ_RESULT_DENY
 
             # Not all requests that have a bucket have an object key. If the
             # key doesn't exist, just create it (for now).
-            if request.object_key_name != "":
-                object_key_name = request.object_key_name
+            if question.object_key_name != "":
+                object_key_name = question.object_key_name
                 if not object_key_name in bucket.objects:
-                    logging.debug(f"Creating object key '{object_key_name}' in bucket '{bucket_name}'")
+                    logging.debug(
+                        f"Creating object key '{object_key_name}' in bucket '{bucket_name}'"
+                    )
                     bucket.add_object(ObjectKey(object_key_name, "value1", {}))
                 object_key = bucket.get_object(object_key_name)
                 # if object_key is None:
@@ -180,7 +193,8 @@ class Store:
         if bucket is None and object_key is None:
             # XXX just allow it for now.
             logging.debug("No bucket or object key, allowing")
-            return response
+            answer.code = authorizer_pb2.AuthorizationResultCode.AUTHZ_RESULT_ALLOW
+            return answer
 
         if bucket is not None:
             policy = bucket.policy
@@ -188,14 +202,23 @@ class Store:
                 logging.debug(f"Applying default-allow policy for bucket {bucket_name}")
                 allow = True
             else:
-                allow = evaluate_policy(
-                    policy, request, bucket=bucket, object_key=object_key
-                )
+                try:
+                    allow = evaluate_policy(
+                        policy, question, bucket=bucket, object_key=object_key
+                    )
+                except ExtraDataRequiredException as e:
+                    answer.code = (
+                        authorizer_pb2.AuthorizationResultCode.AUTHZ_RESULT_EXTRA_DATA_REQUIRED
+                    )
+                    answer.extra_data_required.object_key_tags = e.object_key_tags
+                    return answer
 
         if allow:
-            return response
+            answer.code = authorizer_pb2.AuthorizationResultCode.AUTHZ_RESULT_ALLOW
         else:
-            raise AccessDeniedException("Access denied")
+            answer.code = authorizer_pb2.AuthorizationResultCode.AUTHZ_RESULT_DENY
+
+        return answer
 
 
 def load_store(store):
@@ -217,103 +240,46 @@ def load_store(store):
     policies = [always_allow, allow_with_object_tags, always_deny]
 
     for n, p in enumerate(policies, start=1):
-        bname=f"bucket{n}"
+        bname = f"bucket{n}"
         logging.debug(f"Bucket {bname} policy: {p}")
         logging.debug(f"Bucket {bname} regular")
         b = Bucket(bname, {}, json.dumps(p))
         store.add_bucket(b)
         b.add_object(ObjectKey("objectkey1", "value1", {}))
-        
-        bname=f"bucket{n}v"
+
+        bname = f"bucket{n}v"
         logging.debug(f"Bucket {bname} versioned")
         bv = Bucket(bname, {}, json.dumps(p))
         store.add_bucket(bv)
         bv.add_object(ObjectKey("objectkey1", "value1", {}))
-        
-        bname=f"bucket{n}l"
+
+        bname = f"bucket{n}l"
         logging.debug(f"Bucket {bname} object lock")
         bl = Bucket(bname, {}, json.dumps(p))
         store.add_bucket(bl)
         bl.add_object(ObjectKey("objectkey1", "value1", {}))
-        
-        bname=f"bucket{n}vl"
+
+        bname = f"bucket{n}vl"
         logging.debug(f"Bucket {bname} versioned and object lock")
         bvl = Bucket(bname, {}, json.dumps(p))
         store.add_bucket(bvl)
         bvl.add_object(ObjectKey("objectkey1", "value1", {}))
 
-
     logging.debug(f"Store: {store}")
-
-
-class ExtraDataRequiredException(Exception):
-    def __init__(self, object_key_tags: bool):
-        self.object_key_tags = object_key_tags
-
-    def __str__(self) -> str:
-        return f"ExtraDataRequiredException(object_key_tags={self.object_key_tags})"
-
-
-class AccessDeniedException(Exception):
-    def __init__(self, message: str):
-        self.message = message
-
-    def __str__(self) -> str:
-        return f"AccessDeniedException(message={self.message})"
-
-
-def authz_extra_data_required_status(object_key_tags: bool):
-    """
-    Return a google.rpc.status_pb2.Status object indicating that extra data is
-    required.
-    """
-    detail = any_pb2.Any()
-    edr = authorizer_pb2.ExtraDataSpecification(
-        object_key_tags=object_key_tags
-    )
-    detail.Pack(
-        authorizer_pb2.AuthorizationErrorDetails(
-            code=authorizer_pb2.AuthorizationResultCode.AUTHZ_RESULT_EXTRA_DATA_REQUIRED,
-            extra_data_required=edr,
-        )
-    )
-    return status_pb2.Status(
-        code=code_pb2.INTERNAL, message="Extra data required", details=[detail]
-    )
-
-
-def authz_access_denied_status(message: str):
-    """
-    Return a google.rpc.status_pb2.Status object indicating that access is
-    denied.
-    """
-    detail = any_pb2.Any()
-    detail.Pack(
-        authorizer_pb2.AuthorizationErrorDetails(
-            code=authorizer_pb2.AuthorizationResultCode.AUTHZ_RESULT_DENY
-        )
-    )
-    return status_pb2.Status(
-        code=code_pb2.PERMISSION_DENIED,
-        message=f"Access denied: {message}",
-        details=[detail],
-    )
 
 
 def authz_internal_error_status(e: Exception):
     """
     Return a google.rpc.status_pb2.Status object for the given exception.
     """
-    detail = any_pb2.Any()
-    detail.Pack(
-        authorizer_pb2.AuthorizationErrorDetails(
-            code=authorizer_pb2.AuthorizationResultCode.AUTHZ_RESULT_INTERNAL_ERROR,
-            internal_error=authorizer_pb2.InternalErrorDetails(message=str(e)),
-        )
-    )
-    return status_pb2.Status(
-        code=code_pb2.INTERNAL, message="Internal error", details=[detail]
-    )
+    # detail = any_pb2.Any()
+    # detail.Pack(
+    #     authorizer_pb2.AuthorizationErrorDetails(
+    #         code=authorizer_pb2.AuthorizationResultCode.AUTHZ_RESULT_INTERNAL_ERROR,
+    #         internal_error=authorizer_pb2.InternalErrorDetails(message=str(e)),
+    #     )
+    # )
+    return status_pb2.Status(code=code_pb2.INTERNAL, message="Internal error")
 
 
 class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
@@ -323,11 +289,13 @@ class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
         load_store(self.store)
         super().__init__()
 
-
     def Header(self, request):
-        logging.info("-------------");
-        logging.info(f"New request: id={request.common.authorization_id}")
-        
+        logging.info("-------------")
+        ids=[]
+        for question in request.questions:
+            ids.append(question.common.authorization_id)
+            
+        logging.info(f"New request: ids{ids}")
 
     # Note: Authorize() (the original service) not implemented here.
 
@@ -345,25 +313,16 @@ class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
         logging.debug(f"Request: {fmt_authorize_request(request)}")
 
         try:
-            response = self.store.authorize(request)
+            response = authorizer_pb2.AuthorizeV2Response()
 
-            # logging.debug("Raising fake ExtraDataRequiredException")
-            # raise ExtraDataRequiredException(True, True)
+            for n, question in enumerate(request.questions, start=1):
+                logging.info(f"Question {n}: {fmt_question(question)}")
+                answer = self.store.authorize(question)
+                logging.info(f"Answer {n}: {fmt_answer(answer)}")
+                response.answers.append(answer)
 
             logging.debug(f"Response: {fmt_authorize_response(response)}")
             return response
-
-        except ExtraDataRequiredException as e:
-            context.abort_with_status(
-                rpc_status.to_status(
-                    authz_extra_data_required_status(e.object_key_tags)
-                )
-            )
-
-        except AccessDeniedException as e:
-            context.abort_with_status(
-                rpc_status.to_status(authz_access_denied_status(e.message))
-            )
 
         except Exception as e:
             logging.error(f"Failed to handle request: {e}")
@@ -433,9 +392,9 @@ if __name__ == "__main__":
 
     args = p.parse_args()
     if args.verbose:
-        logging.basicConfig(level=logging.DEBUG)
+        coloredlogs.install(level=logging.DEBUG, isatty=True)
     else:
-        logging.basicConfig(level=logging.INFO)
+        coloredlogs.install(level=logging.INFO, isatty=True)
 
     if args.tls:
         if not args.server_cert:
