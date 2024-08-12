@@ -115,7 +115,11 @@ def authorize_v2(stub, args):
         extra_data_required = False
 
         for n, answer in enumerate(response.answers, start=1):
-            codestr = authorizer_pb2.AuthorizationResultCode.DESCRIPTOR.values_by_number[answer.code].name
+            codestr = (
+                authorizer_pb2.AuthorizationResultCode.DESCRIPTOR.values_by_number[
+                    answer.code
+                ].name
+            )
             logging.debug(f"Answer {n}: {codestr}: {fmt_common(answer.common)}")
 
             if answer.code != authorizer_pb2.AUTHZ_RESULT_ALLOW:

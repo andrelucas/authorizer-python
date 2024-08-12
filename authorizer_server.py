@@ -291,10 +291,10 @@ class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
 
     def Header(self, request):
         logging.info("-------------")
-        ids=[]
+        ids = []
         for question in request.questions:
             ids.append(question.common.authorization_id)
-            
+
         logging.info(f"New request: ids{ids}")
 
     # Note: Authorize() (the original service) not implemented here.
