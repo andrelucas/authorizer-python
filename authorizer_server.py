@@ -45,7 +45,7 @@ class ExtraDataRequiredException(Exception):
         return f"ExtraDataRequiredException(object_key_tags={self.object_key_tags})"
 
 
-def evaluate_policy(policy, request, bucket=None, object_key=None) -> bool:
+def evaluate_policy(policy, question, bucket=None, object_key=None) -> bool:
     """
     Evaluate the policy against the request, given the bucket and object key.
 
@@ -65,19 +65,26 @@ def evaluate_policy(policy, request, bucket=None, object_key=None) -> bool:
 
     if p["action"] == "allow":
         if "require" in p:
-            has_edp = request.HasField("extra_data_provided")
+            # This is to test that the client doesn't get stuck in a loop.
+            if "extraDataLoop" in p:
+                logging.warning("Generating extra data loop")
+                raise ExtraDataRequiredException(True)
+
+            has_edp = question.HasField("extra_data_provided")
             require_object_key_tags = False
             req_fail = False
             edp = None
 
             if has_edp:
-                edp = request.extra_data_provided
+                edp = question.extra_data_provided
                 logging.debug(
                     f"Has extra data provided: {fmt_extra_data_specification(edp)}"
                 )
 
+            # Check for object key tags, the only currently-supported extra
+            # data.
             if "objectTags" in p["require"]:
-                if request.object_key_name == "":
+                if question.object_key_name == "":
                     logging.info(
                         "Not insisting on object key tags for request with no object key"
                     )
@@ -237,7 +244,16 @@ def load_store(store):
             "objectTags",
         ],
     }
-    policies = [always_allow, allow_with_object_tags, always_deny]
+
+    extra_data_loop = {
+        "action": "allow",
+        "require": [
+            "objectTags",
+        ],
+        "extraDataLoop": True,
+    }
+
+    policies = [always_allow, allow_with_object_tags, always_deny, extra_data_loop ]
 
     for n, p in enumerate(policies, start=1):
         bname = f"bucket{n}"
