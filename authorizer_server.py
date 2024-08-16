@@ -170,6 +170,27 @@ class Store:
         answer.common.timestamp.GetCurrentTime()
         answer.common.authorization_id = question.common.authorization_id
 
+        # Magic auto-creation behaviour.
+        if question.opcode == authorizer_pb2.S3_OPCODE_CREATE_BUCKET:
+            bucket_name = question.bucket_name
+            if bucket_name in self.buckets:
+                logging.info(f"Bucket '{bucket_name}' already exists, no auto-creation")
+            else:
+                m = re.search(r"(?P<num>\d+)([a-z])?$", bucket_name)
+                if m.group('num') is not None:
+                    bucket_num = int(m.group('num'))
+                    # Index into policy_order. The script buckets are numbered
+                    # from 1-n, but we've allowed for that with a bogus zero
+                    # entry in policy_name.
+                    policy_name = policy_order[bucket_num]
+                    if policy_name is None:
+                        logging.error(f"No policy for bucket '{bucket_name}', no bucket will be created")
+                    else:
+                        # Corresponding standard policy.
+                        policy = policies[policy_name]                    
+                        logging.warn(f"Automagically creating bucket '{bucket_name}' with policy '{policy_name}' = {policy}")
+                        self.add_bucket(Bucket(bucket_name, {}, json.dumps(policy)))
+
         # Not all requests have a bucket name.
         if question.bucket_name != "":
             bucket_name = question.bucket_name
@@ -227,37 +248,65 @@ class Store:
 
         return answer
 
-
-def load_store(store):
-
-    always_allow = {
+# Standard policies.
+policies: dict[str, dict] = {
+    "always_allow": {
         "action": "allow",
-    }
+    },
 
-    always_deny = {
+    "always_deny": {
         "action": "deny",
-    }
-
-    allow_with_object_tags = {
+    },
+    "allow_with_object_tags": {
         "action": "allow",
         "require": [
             "objectTags",
         ],
-    }
-
-    extra_data_loop = {
+    },
+    "extra_data_loop": {
         "action": "allow",
         "require": [
             "objectTags",
         ],
         "extraDataLoop": True,
-    }
+    }    
+}
 
-    policies = [always_allow, allow_with_object_tags, always_deny, extra_data_loop ]
+# The test script expects these policies in this order, and numbers buckets
+# from 1-n. Map onto the appropriate policy. The None entry is to catch
+# accidental zero-indexing.
+policy_order = [None, "always_allow", "allow_with_object_tags", "always_deny", "extra_data_loop"]
 
-    for n, p in enumerate(policies, start=1):
+def load_store(store):
+
+    # always_allow = {
+    #     "action": "allow",
+    # }
+
+    # always_deny = {
+    #     "action": "deny",
+    # }
+
+    # allow_with_object_tags = {
+    #     "action": "allow",
+    #     "require": [
+    #         "objectTags",
+    #     ],
+    # }
+
+    # extra_data_loop = {
+    #     "action": "allow",
+    #     "require": [
+    #         "objectTags",
+    #     ],
+    #     "extraDataLoop": True,
+    # }
+
+    # policies = ["always_allow", "allow_with_object_tags", "always_deny", "extra_data_loop" ]
+
+    for n, (pname, p) in enumerate(policies.items(), start=1):
         bname = f"bucket{n}"
-        logging.debug(f"Bucket {bname} policy: {p}")
+        logging.debug(f"Bucket {bname} policy: {pname} = {p}")
         logging.debug(f"Bucket {bname} regular")
         b = Bucket(bname, {}, json.dumps(p))
         store.add_bucket(b)
@@ -332,7 +381,8 @@ class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
             response = authorizer_pb2.AuthorizeV2Response()
 
             for n, question in enumerate(request.questions, start=1):
-                logging.info(f"Question {n}: {fmt_question(question)}")
+                opstr = authorizer_pb2.S3Opcode.DESCRIPTOR.values_by_number[question.opcode].name
+                logging.info(f"Question {n}: {opstr}: {fmt_question(question)}")
                 answer = self.store.authorize(question)
                 logging.info(f"Answer {n}: {fmt_answer(answer)}")
                 response.answers.append(answer)
