@@ -187,7 +187,7 @@ class Store:
                         logging.error(f"No policy for bucket '{bucket_name}', no bucket will be created")
                     else:
                         # Corresponding standard policy.
-                        policy = policies[policy_name]                    
+                        policy = policies[policy_name]
                         logging.warn(f"Automagically creating bucket '{bucket_name}' with policy '{policy_name}' = {policy}")
                         self.add_bucket(Bucket(bucket_name, {}, json.dumps(policy)))
 
@@ -269,7 +269,7 @@ policies: dict[str, dict] = {
             "objectTags",
         ],
         "extraDataLoop": True,
-    }    
+    }
 }
 
 # The test script expects these policies in this order, and numbers buckets
@@ -329,6 +329,12 @@ def load_store(store):
         bvl = Bucket(bname, {}, json.dumps(p))
         store.add_bucket(bvl)
         bvl.add_object(ObjectKey("objectkey1", "value1", {}))
+
+    # Create some standard buckets I use all the time.
+    for bname in ["bucket", "testnv", "test"]:
+        b = Bucket(bname, {}, json.dumps(policies["always_allow"]))
+        store.add_bucket(b)
+
 
     logging.debug(f"Store: {store}")
 

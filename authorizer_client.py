@@ -88,6 +88,9 @@ def pack_authorize_request(req, args):
                     # question.environment[iamkey].key.append(value)
                     question.extra_data.object_key_tags[key] = value
 
+        if args.version_id:
+            question.query_parameters["versionId"] = args.version_id
+
         for env in args.environment:
             key, value = env.split("=", 1)
             question.environment[key].key.append(value)
@@ -205,6 +208,8 @@ def main(argv):
     p.add_argument("--account-arn", help="account ARN to authorize", default="")
 
     p.add_argument("--object-tag", help="set an object tag (k=v)", action="append")
+
+    p.add_argument("--version-id", help="version ID")
 
     p.add_argument(
         "-t", "--tls", help="connect to the server using TLS", action="store_true"
