@@ -359,6 +359,7 @@ class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
         self.store = Store()
         load_store(self.store)
         super().__init__()
+        self.seen_ids = set() # This will grow forever.
 
     def Header(self, request):
         logging.info("-------------")
@@ -389,6 +390,13 @@ class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
             for n, question in enumerate(request.questions, start=1):
                 opstr = authorizer_pb2.S3Opcode.DESCRIPTOR.values_by_number[question.opcode].name
                 logging.info(f"Question {n}: {opstr}: {fmt_question(question)}")
+                
+                # Duplicate IDs are a bug in the client.
+                id = question.common.authorization_id
+                if id in self.seen_ids:
+                    logging.error(f"Duplicate ID {id}!")
+                self.seen_ids.add(id)
+                
                 answer = self.store.authorize(question)
                 logging.info(f"Answer {n}: {fmt_answer(answer)}")
                 response.answers.append(answer)
