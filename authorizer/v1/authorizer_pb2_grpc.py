@@ -98,7 +98,6 @@ class AuthorizerService(object):
             options=(),
             channel_credentials=None,
             call_credentials=None,
-            insecure=False,
             compression=None,
             wait_for_ready=None,
             timeout=None,
@@ -107,7 +106,7 @@ class AuthorizerService(object):
             authorizer_dot_v1_dot_authorizer__pb2.AuthorizeRequest.SerializeToString,
             authorizer_dot_v1_dot_authorizer__pb2.AuthorizeResponse.FromString,
             options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def Ping(request,
@@ -115,7 +114,6 @@ class AuthorizerService(object):
             options=(),
             channel_credentials=None,
             call_credentials=None,
-            insecure=False,
             compression=None,
             wait_for_ready=None,
             timeout=None,
@@ -124,7 +122,7 @@ class AuthorizerService(object):
             authorizer_dot_v1_dot_authorizer__pb2.PingRequest.SerializeToString,
             authorizer_dot_v1_dot_authorizer__pb2.PingResponse.FromString,
             options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def AuthorizeV2(request,
@@ -132,7 +130,6 @@ class AuthorizerService(object):
             options=(),
             channel_credentials=None,
             call_credentials=None,
-            insecure=False,
             compression=None,
             wait_for_ready=None,
             timeout=None,
@@ -141,4 +138,4 @@ class AuthorizerService(object):
             authorizer_dot_v1_dot_authorizer__pb2.AuthorizeV2Request.SerializeToString,
             authorizer_dot_v1_dot_authorizer__pb2.AuthorizeV2Response.FromString,
             options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            call_credentials, compression, wait_for_ready, timeout, metadata)
