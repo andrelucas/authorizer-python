@@ -83,17 +83,51 @@ def pack_authorize_request(req, args):
             if args.object_tag:
                 question.extra_data_provided.object_key_tags = True
                 for tag in args.object_tag:
-                    key, value = tag.split("=", 1)
+                    try:
+                        key, value = tag.split("=", 1)
+                    except ValueError:
+                        logging.error(f"object tag: expected key=value: got '{tag}'")
+                        sys.exit(2)
                     # iamkey = "s3:ResourceTag/" + key
                     # question.environment[iamkey].key.append(value)
+                    logging.debug(f"Adding object tag {key}={value}")
                     question.extra_data.object_key_tags[key] = value
 
         if args.version_id:
             question.query_parameters["versionId"] = args.version_id
 
+        if args.amz:
+            for amz in args.amz:
+                try:
+                    key, value = amz.split("=", 1)
+                except ValueError:
+                    logging.error(f"amz: xpected key=value: got '{amz}'")
+                    sys.exit(2)
+                lckey = key.lower()
+                if not lckey.startswith("x-amz-"):
+                    logging.error(f"amz: expected key to start with 'x-amz-': got '{key}'")
+                    sys.exit(2)
+                logging.debug(f"Adding x-amz header {key}={value}")
+                question.x_amz_headers[key] = value
+
+        if args.param:
+            for param in args.param:
+                try:
+                    key, value = param.split("=", 1)
+                except ValueError:
+                    logging.error(f"param: expected key=value: got '{param}'")
+                    sys.exit(2)
+                logging.debug(f"Adding query parameter {key}={value}")
+                question.query_parameters[key] = value
+
         for env in args.environment:
-            key, value = env.split("=", 1)
-            question.environment[key].key.append(value)
+            try:
+                key, value = env.split("=", 1)
+            except ValueError:
+                logging.error(f"environment: expected key=value: got '{env}'")
+                sys.exit(2)
+            logging.debug(f"Adding IAM environment item {key}={value}")
+            question.environment[key].values.append(value)
 
     return req
 
@@ -198,6 +232,8 @@ def main(argv):
         help="IAM environment entry in the form key=value",
         action="append",
     )
+    p.add_argument("--amz", help="x-amz header in the form key=value", action="append")
+    p.add_argument("--param", help="query parameter in the form key=value", action="append")
     p.add_argument(
         "-u", "--canonical-user-id", help="canonical user ID to authorize", default=""
     )
