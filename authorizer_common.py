@@ -80,6 +80,7 @@ opcode_to_enum = {
     "PutBucketEncryption": op_enum.S3_OPCODE_PUT_BUCKET_ENCRYPTION,
 }
 
+opcode_to_enum_nocase = {k.lower(): v for k, v in opcode_to_enum.items()}
 
 def fmt_common(common):
     return MessageToJson(common, indent=None)

@@ -85,7 +85,7 @@ def evaluate_policy(policy, question, bucket=None, object_key=None) -> bool:
             # data.
             if "objectTags" in p["require"]:
                 if question.object_key_name == "":
-                    logging.info(
+                    logging.warn(
                         "Not insisting on object key tags for request with no object key"
                     )
                 else:
@@ -278,32 +278,6 @@ policies: dict[str, dict] = {
 policy_order = [None, "always_allow", "allow_with_object_tags", "always_deny", "extra_data_loop"]
 
 def load_store(store):
-
-    # always_allow = {
-    #     "action": "allow",
-    # }
-
-    # always_deny = {
-    #     "action": "deny",
-    # }
-
-    # allow_with_object_tags = {
-    #     "action": "allow",
-    #     "require": [
-    #         "objectTags",
-    #     ],
-    # }
-
-    # extra_data_loop = {
-    #     "action": "allow",
-    #     "require": [
-    #         "objectTags",
-    #     ],
-    #     "extraDataLoop": True,
-    # }
-
-    # policies = ["always_allow", "allow_with_object_tags", "always_deny", "extra_data_loop" ]
-
     for n, (pname, p) in enumerate(policies.items(), start=1):
         bname = f"bucket{n}"
         logging.debug(f"Bucket {bname} policy: {pname} = {p}")
@@ -362,6 +336,9 @@ class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
         self.seen_ids = set() # This will grow forever.
 
     def Header(self, request):
+        '''
+        Display a header for an AuthorizeV2 request.
+        '''
         logging.info("-------------")
         ids = []
         for question in request.questions:
@@ -372,7 +349,7 @@ class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
     # Note: Authorize() (the original service) not implemented here.
 
     def Ping(self, request, context):
-        self.Header(request)
+        logging.info("----------------")
         logging.debug(f"Ping request: {fmt_common(request.common)}")
         response = authorizer_pb2.PingResponse()
         response.common.timestamp.GetCurrentTime()

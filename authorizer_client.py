@@ -22,6 +22,7 @@ from authorizer.v1 import authorizer_pb2
 
 from authorizer_common import (
     opcode_to_enum,
+    opcode_to_enum_nocase,
     fmt_authorize_request,
     fmt_authorize_response,
     fmt_common,
@@ -65,13 +66,14 @@ def pack_authorize_request(req, args):
     """
     Pack the AuthorizeRequest with the args.
     """
-    for op in args.opcode:
+    for n, op in enumerate(args.opcode):
         question = req.questions.add()
         question.common.timestamp.GetCurrentTime()
-        question.common.authorization_id = args.id
+        # Have a unique authorization_id for each question.
+        question.common.authorization_id = f"{args.id}.q{n}"
         question.bucket_name = args.bucket
         question.object_key_name = args.object_key
-        question.opcode = opcode_to_enum[op]  # We've already checked this is valid.
+        question.opcode = opcode_to_enum_nocase[op.lower()]  # We've already checked this is valid.
         question.canonical_user_id = args.canonical_user_id
         question.user_arn = args.user_arn
         if args.assuming_user_arn is not None:
@@ -120,14 +122,15 @@ def pack_authorize_request(req, args):
                 logging.debug(f"Adding query parameter {key}={value}")
                 question.query_parameters[key] = value
 
-        for env in args.environment:
-            try:
-                key, value = env.split("=", 1)
-            except ValueError:
-                logging.error(f"environment: expected key=value: got '{env}'")
-                sys.exit(2)
-            logging.debug(f"Adding IAM environment item {key}={value}")
-            question.environment[key].values.append(value)
+        if args.environment:
+            for env in args.environment:
+                try:
+                    key, value = env.split("=", 1)
+                except ValueError:
+                    logging.error(f"environment: expected key=value: got '{env}'")
+                    sys.exit(2)
+                logging.debug(f"Adding IAM environment item {key}={value}")
+                question.environment[key].values.append(value)
 
     return req
 
@@ -284,17 +287,16 @@ def main(argv):
     # The user can override the authorization_id field, but if not provided,
     # generate a random one.
     if not args.id:
-        args.id = base64.b64encode(os.urandom(16))
+        args.id = base64.b64encode(os.urandom(16)).decode()
 
     if args.command == "authorize":
         if not args.opcode:
             logging.error("Authorize requires an opcode")
             sys.exit(2)
         for op in args.opcode:
-            if not op in opcode_to_enum:
+            if not op.lower() in opcode_to_enum_nocase:
                 logging.error(f"Unknown opcode '{op}'")
                 sys.exit(2)
-        # args.opcode_enum = opcode_to_enum[args.opcode]
 
     if args.tls:
         root_crt = _load_credential_from_file(args.ca_cert)
