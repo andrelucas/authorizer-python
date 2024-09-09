@@ -197,7 +197,7 @@ class Store:
             bucket = self.get_bucket(question.bucket_name)
             if bucket is None:
                 logging.error(f"Bucket '{question.bucket_name}' not found")
-                answer.code = authorizer_pb2.AuthorizationResultCode.AUTHORIZATION_RESULT_DENY
+                answer.code = authorizer_pb2.AuthorizationResultCode.AUTHORIZATION_RESULT_CODE_DENY
 
             # Not all requests that have a bucket have an object key. If the
             # key doesn't exist, just create it (for now).
@@ -221,7 +221,7 @@ class Store:
         if bucket is None and object_key is None:
             # XXX just allow it for now.
             logging.debug("No bucket or object key, allowing")
-            answer.code = authorizer_pb2.AuthorizationResultCode.AUTHORIZATION_RESULT_ALLOW
+            answer.code = authorizer_pb2.AuthorizationResultCode.AUTHORIZATION_RESULT_CODE_ALLOW
             return answer
 
         if bucket is not None:
@@ -236,15 +236,15 @@ class Store:
                     )
                 except ExtraDataRequiredException as e:
                     answer.code = (
-                        authorizer_pb2.AuthorizationResultCode.AUTHORIZATION_RESULT_EXTRA_DATA_REQUIRED
+                        authorizer_pb2.AuthorizationResultCode.AUTHORIZATION_RESULT_CODE_EXTRA_DATA_REQUIRED
                     )
                     answer.extra_data_required.object_key_tags = e.object_key_tags
                     return answer
 
         if allow:
-            answer.code = authorizer_pb2.AuthorizationResultCode.AUTHORIZATION_RESULT_ALLOW
+            answer.code = authorizer_pb2.AuthorizationResultCode.AUTHORIZATION_RESULT_CODE_ALLOW
         else:
-            answer.code = authorizer_pb2.AuthorizationResultCode.AUTHORIZATION_RESULT_DENY
+            answer.code = authorizer_pb2.AuthorizationResultCode.AUTHORIZATION_RESULT_CODE_DENY
 
         return answer
 
@@ -346,7 +346,7 @@ def authz_internal_error_status(e: Exception):
     # detail = any_pb2.Any()
     # detail.Pack(
     #     authorizer_pb2.AuthorizationErrorDetails(
-    #         code=authorizer_pb2.AuthorizationResultCode.AUTHORIZATION_RESULT_INTERNAL_ERROR,
+    #         code=authorizer_pb2.AuthorizationResultCode.AUTHORIZATION_RESULT_CODE_INTERNAL_ERROR,
     #         internal_error=authorizer_pb2.InternalErrorDetails(message=str(e)),
     #     )
     # )

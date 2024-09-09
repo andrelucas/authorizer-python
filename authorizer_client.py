@@ -159,9 +159,9 @@ def authorize_v2(stub, args):
             )
             logging.debug(f"Answer {n}: {codestr}: {fmt_common(answer.common)}")
 
-            if answer.code != authorizer_pb2.AUTHORIZATION_RESULT_ALLOW:
+            if answer.code != authorizer_pb2.AUTHORIZATION_RESULT_CODE_ALLOW:
                 success = False
-            if answer.code == authorizer_pb2.AUTHORIZATION_RESULT_EXTRA_DATA_REQUIRED:
+            if answer.code == authorizer_pb2.AUTHORIZATION_RESULT_CODE_EXTRA_DATA_REQUIRED:
                 extra_data_required = True
             # if answer.answer.result_code != authorizer_pb2.AuthorizationResultCode.AUTHZ_OK:
             #     logging.error(
