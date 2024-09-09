@@ -5,8 +5,9 @@
 * [gRPC and protobuf generated code.](#gRPCandprotobufgeneratedcode.)
 		* [Optional: Run `buf` to generate the Python code](#Optional:RunbuftogeneratethePythoncode)
 	* [Starting the server](#Startingtheserver)
+	* [Default server buckets](#Defaultserverbuckets)
 	* [Testing using the local client](#Testingusingthelocalclient)
-* [TLS mode](#TLSmode)
+* [(Not in use or tested) TLS mode](#NotinuseortestedTLSmode)
 
 <!-- vscode-markdown-toc-config
 	numbering=false
@@ -34,6 +35,8 @@ in your path.
 
 #### <a name='Optional:RunbuftogeneratethePythoncode'></a>Optional: Run `buf` to generate the Python code
 
+Note that you shouldn't need to do this unless you're changing the protobuf.
+
 ```sh
 buf generate
 ```
@@ -54,23 +57,80 @@ be a Python module that can be imported directly.
 ### <a name='Startingtheserver'></a>Starting the server
 
 ```sh
-# Start an authenticator server on port 8001.
+# Start an authenticator server on port 8003.
 ./authorizer_server.py
 
 # Start on a different port.
-./authorizer_server.py 8002
+./authorizer_server.py 8083
 
 # Start in verbose mode (useful!)
-./authorizer_server.py --verbose
+./authorizer_server.py -v
+
+# Start with 'reload' (for developing the server) to automatically restart on
+# any working dir changes.
+pip3 install reload
+hash -r
+reload ./authorizer_server.py -v
 ```
 
 The server can be stopped with CTRL-C.
 
+### <a name='Defaultserverbuckets'></a>Default server buckets
+
+By default, the server sets up a few buckets with 'policies' that allow you to
+test against basic expectations.
+
+| *Bucket* | *Policy* | *Purpose* |
+| -------- | -------- | ---------- |
+| bucket1 | Always allow | |
+| bucket2 | Always deny | |
+| bucket3 | Allow, but ask for extra data if none are provided | Test that the RGW client properly appends extra data if requested. |
+| bucket4 | Always ask for extra data | Test that the RGW client doesn't allow extra data loops. |
+
 ### <a name='Testingusingthelocalclient'></a>Testing using the local client
 
-XXX
+```sh
 
-## <a name='TLSmode'></a>TLS mode
+# Get help. Note that you can set most request fields explicitly using various
+# options.
+./authorizer_client.py -h
+
+# Send a simple ping (easy test).
+./authorizer_client.py -v ping
+
+# Authorize a get-object request (expect success with bucket1).
+./authorizer_client.py -v authorize -b bucket1 -k foo -u testid1 \
+	-o GetObject
+
+# Authorize a get-object request (expect failure with bucket2).
+./authorizer_client.py -v authorize -b bucket2 -k foo -u testid1 \
+	-o GetObject
+
+# Authorize a get-object request (expect an 'extra data required' answer with bucket2).
+./authorizer_client.py -v authorize -b bucket3 -k foo -u testid1 \
+	-o GetObject
+	
+# Authorize in one question get-object, get-object-legal-hold and 
+# get-object-retention (this is a real thing).
+./authorizer_client.py -v authorize -b bucket1 -k foo -u testid1 \
+    -o GetObject -o GetObjectLegalHold -o GetObjectRetention
+
+# Authorize a get-object request, providing object tags.
+./authorizer_client.py -v authorize -b bucket3 -k foo -u testid1 \
+	-o GetObject --object-tag tagkey=tagvalue
+
+# Authorize a list-bucket request, providing query parameters.
+./authorizer_client.py -v authorize -b bucket1 -u testid \
+    -o ListBucket --param "prefix=/foo"
+	
+# Authorize a put-object request, providing a (random) x-amz- header.
+./authorizer_client.py -v authorize -b bucket1 -u testid \
+    -o PutObject --amz "x-amz-foo=bar"
+
+# I suspect you're getting the idea by now.
+```
+
+## <a name='NotinuseortestedTLSmode'></a>(Not in use or tested) TLS mode
 
 The server and client can run with TLS enabled. For now, it's very simple TLS,
 wherein the server has a key and certificate which the client can verify when
@@ -91,9 +151,7 @@ cd credentials # This directory.
 
 # Now the client examples will work if you give them the TLS root cert.
 ./authorizer_client.py -v auth -t --ca-cert=credentials/root.crt \
-  --string-to-sign="QVdTNC1ITUFDLVNIQTI1NgoyMDIzMTExM1QxNTA4MzNaCjIwMjMxMTEzL3VzLWVhc3QtMS9zMy9hd3M0X3JlcXVlc3QKOTFmM2ZlYmQ1NjFhMTgyNDU1M2RmNTQxMzJiMDVhNGFjZDk2ZDRlOTI4OWE0M2EzMWM5YmY5NWM5M2Q3OTY5Ng==" \
-  --authorization-header="AWS4-HMAC-SHA256 Credential=0555b35654ad1656d804/20231113/us-east-1/s3/aws4_request, SignedHeaders=content-md5;host;x-amz-content-sha256;x-amz-date, Signature=2d139a3564b7795d859f5ce788b0d7a0f0c9028c8519b381c9add9a72345aace"
+  -v ping
 
-DEBUG:root:using server_address dns:127.0.0.1:8002
 ```
 
