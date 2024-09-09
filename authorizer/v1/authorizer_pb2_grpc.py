@@ -6,7 +6,8 @@ from authorizer.v1 import authorizer_pb2 as authorizer_dot_v1_dot_authorizer__pb
 
 
 class AuthorizerServiceStub(object):
-    """Missing associated documentation comment in .proto file."""
+    """AuthorizerService provides RPCs for authorizing S3 requests.
+    """
 
     def __init__(self, channel):
         """Constructor.
@@ -32,7 +33,8 @@ class AuthorizerServiceStub(object):
 
 
 class AuthorizerServiceServicer(object):
-    """Missing associated documentation comment in .proto file."""
+    """AuthorizerService provides RPCs for authorizing S3 requests.
+    """
 
     def Authorize(self, request, context):
         """Authorize authorizes an S3 request.
@@ -57,8 +59,7 @@ class AuthorizerServiceServicer(object):
         decision. Failures here will result in the user getting an error
         message. An Allow or Deny code means the protocol is ended. An 'extra
         data required' code means the client should either fail authorization
-        or submit another Authorize() request with the required data.
-
+        or submit another AuthorizeV2() request with the required data.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -90,7 +91,8 @@ def add_AuthorizerServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class AuthorizerService(object):
-    """Missing associated documentation comment in .proto file."""
+    """AuthorizerService provides RPCs for authorizing S3 requests.
+    """
 
     @staticmethod
     def Authorize(request,
