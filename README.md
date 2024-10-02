@@ -87,6 +87,34 @@ test against basic expectations.
 | bucket3 | Allow, but ask for extra data if none are provided | Test that the RGW client properly appends extra data if requested. |
 | bucket4 | Always ask for extra data | Test that the RGW client doesn't allow extra data loops. |
 
+### 'Magic' auto-created buckets
+
+To make scripted testing easier, the server will automatically create buckets
+whenever it sees an authorization request for a create-bucket op. The policy
+attached to the bucket will be assigned based on the bucket's name:
+
+| *Bucket name pattern* | Policy |
+| --- | --- |
+| `.*1[a-z]$` | Always allow |
+| `.*2[a-z]$` | Always deny |
+| `.*3[a-z]$` | Allow, but ask for extra data if non are provided |
+| `.*4[a-z]$` | Always ask for extra data |
+
+Obviously this matches the default server buckets listed above. It allows
+scripts to create a bucket with name, say, `test-20241007-1225-1` and because
+it ends in '1' (with an optional letter suffix) it will be assigned the
+'always allow' policy.
+
+This is more useful to me that always using the same bucket name, because it's
+not always easy to delete a bucket - if one sets legal hold or retention
+policy on a bucket, RGW might not allow it to be deleted. With the dynamic
+bucket creation, each script uses a different bucket name and the problem
+never arises.
+
+I use the letter suffix to indicate what 'type' of bucket I'm creating. No
+suffix means a regular bucket (without versioning). 'v' indicates a bucket
+with versioning enabled. 'l' indicates a bucket with Object Lock enabled.
+
 ### <a name='Testingusingthelocalclient'></a>Testing using the local client
 
 ```sh
