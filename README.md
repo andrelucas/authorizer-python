@@ -24,7 +24,11 @@ and returning useful responses to test the RGW implementation.
 ## <a name='Prereqs'></a>Prereqs
 
 ```sh
-pip3 install grpcio grpcio-status grpcio-tools coloredlogs
+pip3 install grpcio grpcio-status grpcio-tools \
+	coloredlogs \
+	opentelemetry-api opentelemetry-sdk \
+	opentelemetry-exporter-otlp-proto-grpc \
+	opentelemetry-instrumentation-grpc
 ```
 
 ## <a name='gRPCandprotobufgeneratedcode.'></a>gRPC and protobuf generated code.

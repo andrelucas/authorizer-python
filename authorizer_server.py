@@ -28,6 +28,37 @@ from authorizer.v1 import authorizer_pb2
 
 from authorizer_common import *
 
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor,
+    # ConsoleSpanExporter,
+)
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+from opentelemetry.instrumentation.grpc import GrpcInstrumentorServer
+
+resource = Resource(
+    attributes={
+        SERVICE_NAME: "authorizer_server",
+    }
+)
+
+provider = TracerProvider(resource=resource)
+processor = BatchSpanProcessor(
+    OTLPSpanExporter(endpoint="localhost:4317", insecure=True)
+)
+# processor = BatchSpanProcessor(ConsoleSpanExporter())
+provider.add_span_processor(processor)
+
+# Sets the global default tracer provider
+trace.set_tracer_provider(provider)
+
+# Creates a tracer from the global tracer provider
+tracer = trace.get_tracer(__name__)
+
+grpc_server_instrumentor = GrpcInstrumentorServer()
+grpc_server_instrumentor.instrument()
 
 class PolicyEvaluationFailedException(Exception):
     def __init__(self, message: str):
@@ -357,6 +388,7 @@ class AuthorizerServer(authorizer_pb2_grpc.AuthorizerServiceServicer):
         logging.debug(f"Ping response: {fmt_common(response.common)}")
         return response
 
+    @tracer.start_as_current_span(name="AuthorizeV2")
     def AuthorizeV2(self, request, context):
         self.Header(request)
         logging.debug(f"Request: {fmt_authorize_request(request)}")
